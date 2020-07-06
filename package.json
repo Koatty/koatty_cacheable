@@ -1,0 +1,53 @@
+{
+    "name": "think_cacheable",
+    "version": "1.0.0",
+    "description": "Cacheable for koatty.",
+    "scripts": {
+        "build": "del-cli --force dist && tsc",
+        "prepublishOnly": "npm test && npm run build",
+        "test": "tslint 'src/**/*.ts'"
+    },
+    "main": "./dist/index.js",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/thinkkoa/think_cacheable.git"
+    },
+    "keywords": [
+        "validtion",
+        "koatty",
+        "thinkkoa"
+    ],
+    "engines": {
+        "node": ">10.0.0"
+    },
+    "author": {
+        "name": "richenlin",
+        "email": "richenlin@gmail.com"
+    },
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/thinkkoa/think_cacheable/issues"
+    },
+    "homepage": "https://github.com/thinkkoa/think_cacheable",
+    "devDependencies": {
+        "@types/node": "^12.x.x",
+        "del-cli": "^3.0.1",
+        "ts-node": "^8.10.2",
+        "tslint": "^6.1.2",
+        "tslint-config-alloy": "^0.2.1",
+        "typescript": "^3.9.6"
+    },
+    "dependencies": {
+        "think_container": "^1.1.2",
+        "think_lib": "^2.x.x",
+        "think_logger": "^2.x.x",
+        "think_store": "^3.4.0",
+        "tslib": "^2.0.0"
+    },
+    "maintainers": [
+        {
+            "name": "richenlin",
+            "email": "richenlin@gmail.com"
+        }
+    ]
+}
