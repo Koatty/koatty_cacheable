@@ -1,5 +1,5 @@
 {
-    "name": "think_cacheable",
+    "name": "koatty_cacheable",
     "version": "1.0.0",
     "description": "Cacheable for koatty.",
     "scripts": {
@@ -10,7 +10,7 @@
     "main": "./dist/index.js",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/thinkkoa/think_cacheable.git"
+        "url": "git+https://github.com/thinkkoa/koatty_cacheable.git"
     },
     "keywords": [
         "validtion",
@@ -26,9 +26,9 @@
     },
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/thinkkoa/think_cacheable/issues"
+        "url": "https://github.com/thinkkoa/koatty_cacheable/issues"
     },
-    "homepage": "https://github.com/thinkkoa/think_cacheable",
+    "homepage": "https://github.com/thinkkoa/koatty_cacheable",
     "devDependencies": {
         "@types/node": "^12.x.x",
         "del-cli": "^3.0.1",
@@ -38,7 +38,7 @@
         "typescript": "^3.9.6"
     },
     "dependencies": {
-        "think_container": "^1.1.2",
+        "koatty_container": "^1.1.2",
         "think_lib": "^2.x.x",
         "think_logger": "^2.x.x",
         "think_store": "^3.4.0",

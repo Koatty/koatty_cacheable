@@ -1,14 +1,14 @@
 /*
  * @Author: richen
  * @Date: 2020-07-06 19:53:43
- * @LastEditTime: 2020-07-06 19:55:29
+ * @LastEditTime: 2020-07-16 17:03:46
  * @Description:
  * @Copyright (c) - <richenlin(at)gmail.com>
  */
 import * as helper from "think_lib";
 import logger from "think_logger";
 const store = require("think_store");
-import { IOCContainer } from 'think_container';
+import { IOCContainer } from 'koatty_container';
 
 
 /**

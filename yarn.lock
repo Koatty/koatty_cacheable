@@ -475,6 +475,16 @@ kind-of@^6.0.3:
   resolved "https://registry.yarnpkg.com/kind-of/-/kind-of-6.0.3.tgz#07c05034a6c349fa06e24fa35aa76db4580ce4dd"
   integrity sha512-dcS1ul+9tmeD95T+x28/ehLgd9mENa3LsvDTtzm3vyBEO7RPptvAD+t44WVXaUjTBRcrpFeFlC8WCruUR456hw==
 
+koatty_container@^1.1.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/koatty_container/-/koatty_container-1.1.2.tgz#a5cf5dd61640dbf7d38b1f43edce555b905e6670"
+  integrity sha512-XvZDMyzdZGKNKoxesfO6p1bkTqcB5pu7yIrbhey76MVwtEXFeg83Zloxm2NkcPg3hU/I+NNMJ2Sw1tmBiKU2yA==
+  dependencies:
+    reflect-metadata "^0.1.13"
+    think_lib "^2.x.x"
+    think_logger "^2.x.x"
+    tslib "^2.0.0"
+
 lines-and-columns@^1.1.6:
   version "1.1.6"
   resolved "https://registry.yarnpkg.com/lines-and-columns/-/lines-and-columns-1.1.6.tgz#1c00c743b433cd0a4e80758f7b64a57440d9ff00"
@@ -824,17 +834,7 @@ supports-color@^5.3.0:
   dependencies:
     has-flag "^3.0.0"
 
-think_container@^1.1.2:
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/think_container/-/think_container-1.1.2.tgz#dc3a6ac1bec703763ec26a733997e2c7c7047487"
-  integrity sha512-8f55QqY8LIy6KRa67GtkqTOcU0EAPkFyDB5oVk52KszFlNlhigb+cVH8vqmoplyNLnQfOKk0+22BcMxHX6AEDQ==
-  dependencies:
-    reflect-metadata "^0.1.13"
-    think_lib "^2.6.0"
-    think_logger "^2.2.4"
-    tslib "^2.0.0"
-
-think_lib@^2.6.0, think_lib@^2.x.x:
+think_lib@^2.x.x:
   version "2.6.0"
   resolved "https://registry.yarnpkg.com/think_lib/-/think_lib-2.6.0.tgz#d7959976f0e19fd9c0b76a3a7b0b396c6e58911f"
   integrity sha512-vEtmdGahwkwYynh1jCNWBK9ckFdhHJ8r1T6Oe5SNbdIfHnGvqM7R9xZXhYB4qFjxTDupG6UtQkwt7l71Lh3heQ==
@@ -844,7 +844,7 @@ think_lib@^2.6.0, think_lib@^2.x.x:
     moment "^2.25.3"
     murmurhash "^1.0.0"
 
-think_logger@^2.2.4, think_logger@^2.x.x:
+think_logger@^2.x.x:
   version "2.2.4"
   resolved "https://registry.yarnpkg.com/think_logger/-/think_logger-2.2.4.tgz#58688602d8a65ff4c5afdf40f383bcb7889f63f1"
   integrity sha512-2jwU8AmRwv/FTEYFC/nmd5QP3id7woXEubbFJgZv++V6WX5rPmVeN2tqWSiypMECySXQLMksO8VCxxmI4cSe/Q==
