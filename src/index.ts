@@ -1,18 +1,107 @@
 /*
  * @Author: richen
  * @Date: 2020-07-06 19:53:43
- * @LastEditTime: 2020-07-16 17:03:46
+ * @LastEditTime: 2020-11-02 20:40:27
  * @Description:
  * @Copyright (c) - <richenlin(at)gmail.com>
  */
 import * as helper from "think_lib";
 import logger from "think_logger";
 const store = require("think_store");
-import { IOCContainer } from 'koatty_container';
+import { Application, IOCContainer, TAGGED_CLS } from 'koatty_container';
 
+const APP_READY_HOOK = "APP_READY_HOOK";
+/**
+ * 
+ *
+ * @interface CacheStoreInterface
+ */
+interface CacheStoreInterface {
+    store: StoreInterface;
+}
+interface StoreInterface {
+    connect?: (options: RedisOptions, connnum?: number) => Promise<any>;
+    getConnection?: () => Promise<any>;
+    close?: (client: any) => null;
+    wrap?: (name: string, data: any[]) => Promise<any>;
+    get?: (name: string) => Promise<any>;
+    set?: (name: string, value: any, timeout?: number) => Promise<any>;
+    ttl?: (name: string) => Promise<any>;
+    del?: (name: string) => Promise<any>;
+    incr?: (name: string) => Promise<any>;
+    decr?: (name: string) => Promise<any>;
+    exists?: (name: string) => Promise<any>;
+    expire?: (name: string, timeout?: number) => Promise<any>;
+}
+// 
+const cacheStore: CacheStoreInterface = {
+    store: {},
+};
 
 /**
- * Decorate this method to support caching. Reids server config from db.ts.
+ * redis server options
+ *
+ * @interface RedisOptions
+ */
+interface RedisOptions {
+    key_prefix: string;
+    host: string;
+    port: number;
+    password?: string;
+    db?: string;
+    timeout?: number;
+    poolsize?: number;
+    conn_timeout?: number;
+}
+
+/**
+ * initiation redis connection and client.
+ *
+ * @param {Application} app
+ * @returns {*}  {Promise<StoreInterface>}
+ */
+async function InitRedisConn(app: Application): Promise<StoreInterface> {
+    const opt = app.config("Cache", "db") || app.config("redis", "db");
+    if (helper.isEmpty(opt)) {
+        throw Error("Missing redis server configuration. Please write a configuration item with the key name 'Cache' or 'redis' in the db.ts file.");
+    }
+    if (!cacheStore.store) {
+        const redisStore = store.getInstance(opt);
+        if (redisStore && redisStore.connect) {
+            cacheStore.store = await redisStore.getConnection(redisStore.options, 3).catch((e: any): any => {
+                logger.error(`Redis connection failed. at ScheduleLocker.InitRedisConn. ${e.message}`);
+                return null;
+            });
+        }
+    }
+    if (!cacheStore.store || !helper.isFunction(cacheStore.store.connect)) {
+        throw Error(`Redis connection failed. `);
+    }
+    // set app.cacheStore
+    helper.define(app, "cacheStore", cacheStore, true);
+    IOCContainer.setApp(app);
+
+    return cacheStore.store;
+}
+
+/**
+ * Enable redis cache store.
+ * Need configuration item with the key name 'Cache' or 'redis' in the db.ts file
+ * @export
+ * @returns {*} 
+ */
+export function EnableCacheStore(): ClassDecorator {
+    logger.custom('think', '', 'EnableCacheStore');
+    return (target: any) => {
+        if (!(target.__proto__.name === "Koatty")) {
+            throw new Error(`class does not inherit from Koatty`);
+        }
+        IOCContainer.attachClassMetadata(TAGGED_CLS, APP_READY_HOOK, InitRedisConn, target);
+    };
+}
+
+/**
+ * Decorate this method to support caching. Redis server config from db.ts.
  * The cache method returns a value to ensure that the next time the method is executed with the same parameters,
  * the results can be obtained directly from the cache without the need to execute the method again.
  *
@@ -25,8 +114,8 @@ import { IOCContainer } from 'koatty_container';
 export function CacheAble(cacheName: string, paramKey?: number | number[], timeout = 3600): MethodDecorator {
     return (target: any, methodName: string, descriptor: PropertyDescriptor) => {
         const componentType = IOCContainer.getType(target);
-        if (componentType === "CONTROLLER") {
-            throw Error("CacheAble decorator cannot be used in the controller class.");
+        if (componentType !== "SERVICE" && componentType !== "COMPONENT") {
+            throw Error("This decorator only used in the service、component class.");
         }
         let identifier = IOCContainer.getIdentifier(target);
         identifier = identifier || (target.constructor ? (target.constructor.name || "") : "");
@@ -38,19 +127,19 @@ export function CacheAble(cacheName: string, paramKey?: number | number[], timeo
             async value(...props: any[]) {
                 let cacheFlag = true;
                 // tslint:disable-next-line: no-invalid-this
-                const redisOptions = this.app.config("CacheAble", "db") || this.app.config("redis", "db");
-                if (helper.isEmpty(redisOptions)) {
+                if (!this.app || !this.app.config) {
                     cacheFlag = false;
-                    logger.error("Missing redis server configuration. Please write a configuration item with the key name 'CacheAble' or 'redis' in the db.ts file.");
+                    logger.error("The class must have Koatty.app attributes.");
                 }
 
                 // tslint:disable-next-line: one-variable-per-declaration
-                let cacheStore;
+                let cacheStore: StoreInterface;
                 if (cacheFlag) {
-                    cacheStore = store.getInstance(redisOptions);
+                    // tslint:disable-next-line: no-invalid-this
+                    cacheStore = this.app.cacheStore;
                     if (!cacheStore || !helper.isFunction(cacheStore.get)) {
                         cacheFlag = false;
-                        logger.error(`Redis connection failed. @CacheAble is not executed.`);
+                        logger.warn(`Redis connection failed. @CacheAble is not executed. `);
                     }
                 }
 
@@ -114,18 +203,6 @@ export function CacheAble(cacheName: string, paramKey?: number | number[], timeo
         return descriptor;
     };
 }
-/**
- * Decorate this method to support caching. Reids server config from db.ts.
- * The cache method returns a value to ensure that the next time the method is executed with the same parameters,
- * the results can be obtained directly from the cache without the need to execute the method again.
- *
- * @export
- * @param {string} cacheName cache name
- * @param {(number | number[])} [paramKey] The index of the arguments.
- * @param {number} [timeout=3600] cache timeout
- * @returns {MethodDecorator}
- */
-export const Cacheable = CacheAble;
 
 /**
  * 
@@ -133,7 +210,7 @@ export const Cacheable = CacheAble;
 export type eventTimes = "Before" | "After";
 
 /**
- * Decorating the execution of this method will trigger a cache clear operation. Reids server config from db.ts.
+ * Decorating the execution of this method will trigger a cache clear operation. Redis server config from db.ts.
  *
  * @export
  * @param {string} cacheName cacheName cache name
@@ -144,8 +221,8 @@ export type eventTimes = "Before" | "After";
 export function CacheEvict(cacheName: string, paramKey?: number | number[], eventTime: eventTimes = "Before") {
     return (target: any, methodName: string, descriptor: PropertyDescriptor) => {
         const componentType = IOCContainer.getType(target);
-        if (componentType === "CONTROLLER") {
-            throw Error("CacheEvict decorator cannot be used in the controller class.");
+        if (componentType !== "SERVICE" && componentType !== "COMPONENT") {
+            throw Error("This decorator only used in the service、component class.");
         }
         const identifier = IOCContainer.getIdentifier(target);
         const { value, configurable, enumerable } = descriptor;
@@ -156,19 +233,19 @@ export function CacheEvict(cacheName: string, paramKey?: number | number[], even
             async value(...props: any[]) {
                 let cacheFlag = true;
                 // tslint:disable-next-line: no-invalid-this
-                const redisOptions = this.app.config("CacheAble", "db") || this.app.config("redis", "db");
-                if (helper.isEmpty(redisOptions)) {
+                if (!this.app || !this.app.config) {
                     cacheFlag = false;
-                    logger.error("Missing redis server configuration. Please write a configuration item with the key name 'CacheAble' or 'redis' in the db.ts file.");
+                    logger.error("The class must have Koatty.app attributes.");
                 }
 
                 // tslint:disable-next-line: one-variable-per-declaration
-                let cacheStore;
+                let cacheStore: StoreInterface;
                 if (cacheFlag) {
-                    cacheStore = store.getInstance(redisOptions);
-                    if (!cacheStore || !helper.isFunction(cacheStore.rm)) {
+                    // tslint:disable-next-line: no-invalid-this
+                    cacheStore = this.app.cacheStore;
+                    if (!cacheStore || !helper.isFunction(cacheStore.get)) {
                         cacheFlag = false;
-                        logger.error(`Redis connection failed. @CacheAble is not executed.`);
+                        logger.warn(`Redis connection failed. @CacheEvict is not executed. `);
                     }
                 }
 
@@ -198,9 +275,9 @@ export function CacheEvict(cacheName: string, paramKey?: number | number[], even
 
                     if (eventTime === "Before") {
                         if (!helper.isTrueEmpty(key)) {
-                            await cacheStore.rm(`${cacheName}:${key}`).catch((): any => null);
+                            await cacheStore.del(`${cacheName}:${key}`).catch((): any => null);
                         } else {
-                            await cacheStore.rm(cacheName).catch((): any => null);
+                            await cacheStore.del(cacheName).catch((): any => null);
                         }
                         // tslint:disable-next-line: no-invalid-this
                         return value.apply(this, props);
@@ -208,9 +285,9 @@ export function CacheEvict(cacheName: string, paramKey?: number | number[], even
                         // tslint:disable-next-line: no-invalid-this
                         const res = await value.apply(this, props);
                         if (!helper.isTrueEmpty(key)) {
-                            await cacheStore.rm(`${cacheName}:${key}`).catch((): any => null);
+                            await cacheStore.del(`${cacheName}:${key}`).catch((): any => null);
                         } else {
-                            await cacheStore.rm(cacheName).catch((): any => null);
+                            await cacheStore.del(cacheName).catch((): any => null);
                         }
                         return res;
                     }
