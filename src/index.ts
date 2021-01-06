@@ -1,13 +1,13 @@
 /*
  * @Author: richen
  * @Date: 2020-07-06 19:53:43
- * @LastEditTime: 2020-11-02 20:40:27
+ * @LastEditTime: 2020-12-01 19:16:17
  * @Description:
  * @Copyright (c) - <richenlin(at)gmail.com>
  */
-import * as helper from "think_lib";
-import logger from "think_logger";
-const store = require("think_store");
+import * as helper from "koatty_lib";
+import { DefaultLogger as logger } from "koatty_logger";
+import { RedisStore, Store, StoreOptions } from "koatty_store";
 import { Application, IOCContainer, TAGGED_CLS } from 'koatty_container';
 
 const APP_READY_HOOK = "APP_READY_HOOK";
@@ -17,66 +17,32 @@ const APP_READY_HOOK = "APP_READY_HOOK";
  * @interface CacheStoreInterface
  */
 interface CacheStoreInterface {
-    store: StoreInterface;
+    store?: RedisStore;
 }
-interface StoreInterface {
-    connect?: (options: RedisOptions, connnum?: number) => Promise<any>;
-    getConnection?: () => Promise<any>;
-    close?: (client: any) => null;
-    wrap?: (name: string, data: any[]) => Promise<any>;
-    get?: (name: string) => Promise<any>;
-    set?: (name: string, value: any, timeout?: number) => Promise<any>;
-    ttl?: (name: string) => Promise<any>;
-    del?: (name: string) => Promise<any>;
-    incr?: (name: string) => Promise<any>;
-    decr?: (name: string) => Promise<any>;
-    exists?: (name: string) => Promise<any>;
-    expire?: (name: string, timeout?: number) => Promise<any>;
-}
-// 
-const cacheStore: CacheStoreInterface = {
-    store: {},
-};
 
-/**
- * redis server options
- *
- * @interface RedisOptions
- */
-interface RedisOptions {
-    key_prefix: string;
-    host: string;
-    port: number;
-    password?: string;
-    db?: string;
-    timeout?: number;
-    poolsize?: number;
-    conn_timeout?: number;
-}
+// cacheStore
+const cacheStore: CacheStoreInterface = {
+    store: null
+};
 
 /**
  * initiation redis connection and client.
  *
  * @param {Application} app
- * @returns {*}  {Promise<StoreInterface>}
+ * @returns {*}  {Promise<RedisStore>}
  */
-async function InitRedisConn(app: Application): Promise<StoreInterface> {
-    const opt = app.config("Cache", "db") || app.config("redis", "db");
+async function InitRedisConn(app: Application): Promise<RedisStore> {
+    const opt: StoreOptions = app.config("Cache", "db") || app.config("redis", "db");
     if (helper.isEmpty(opt)) {
         throw Error("Missing redis server configuration. Please write a configuration item with the key name 'Cache' or 'redis' in the db.ts file.");
     }
     if (!cacheStore.store) {
-        const redisStore = store.getInstance(opt);
-        if (redisStore && redisStore.connect) {
-            cacheStore.store = await redisStore.getConnection(redisStore.options, 3).catch((e: any): any => {
-                logger.error(`Redis connection failed. at ScheduleLocker.InitRedisConn. ${e.message}`);
-                return null;
-            });
-        }
+        cacheStore.store = Store.getInstance(opt);
     }
     if (!cacheStore.store || !helper.isFunction(cacheStore.store.connect)) {
         throw Error(`Redis connection failed. `);
     }
+
     // set app.cacheStore
     helper.define(app, "cacheStore", cacheStore, true);
     IOCContainer.setApp(app);
@@ -91,7 +57,7 @@ async function InitRedisConn(app: Application): Promise<StoreInterface> {
  * @returns {*} 
  */
 export function EnableCacheStore(): ClassDecorator {
-    logger.custom('think', '', 'EnableCacheStore');
+    logger.Custom('think', '', 'EnableCacheStore');
     return (target: any) => {
         if (!(target.__proto__.name === "Koatty")) {
             throw new Error(`class does not inherit from Koatty`);
@@ -129,17 +95,14 @@ export function CacheAble(cacheName: string, paramKey?: number | number[], timeo
                 // tslint:disable-next-line: no-invalid-this
                 if (!this.app || !this.app.config) {
                     cacheFlag = false;
-                    logger.error("The class must have Koatty.app attributes.");
+                    logger.Error("The class must have Koatty.app attributes.");
                 }
 
                 // tslint:disable-next-line: one-variable-per-declaration
-                let cacheStore: StoreInterface;
                 if (cacheFlag) {
-                    // tslint:disable-next-line: no-invalid-this
-                    cacheStore = this.app.cacheStore;
-                    if (!cacheStore || !helper.isFunction(cacheStore.get)) {
+                    if (!cacheStore.store || !helper.isFunction(cacheStore.store.get)) {
                         cacheFlag = false;
-                        logger.warn(`Redis connection failed. @CacheAble is not executed. `);
+                        logger.Warn(`Please use @EnableCacheStore to enable cache storage in App.ts. `);
                     }
                 }
 
@@ -169,9 +132,9 @@ export function CacheAble(cacheName: string, paramKey?: number | number[], timeo
                     }
 
                     if (!helper.isTrueEmpty(key)) {
-                        res = await cacheStore.get(`${cacheName}:${key}`).catch((): any => null);
+                        res = await cacheStore.store.get(`${cacheName}:${key}`).catch((): any => null);
                     } else {
-                        res = await cacheStore.get(cacheName).catch((): any => null);
+                        res = await cacheStore.store.get(cacheName).catch((): any => null);
                     }
                     try {
                         res = JSON.parse(res || "");
@@ -188,9 +151,9 @@ export function CacheAble(cacheName: string, paramKey?: number | number[], timeo
                             timeout = 60;
                         }
                         if (!helper.isTrueEmpty(key)) {
-                            cacheStore.set(`${cacheName}:${key}`, JSON.stringify(res), timeout).catch((): any => null);
+                            cacheStore.store.set(`${cacheName}:${key}`, JSON.stringify(res), timeout).catch((): any => null);
                         } else {
-                            cacheStore.set(cacheName, JSON.stringify(res), timeout).catch((): any => null);
+                            cacheStore.store.set(cacheName, JSON.stringify(res), timeout).catch((): any => null);
                         }
                     }
                     return res;
@@ -235,17 +198,13 @@ export function CacheEvict(cacheName: string, paramKey?: number | number[], even
                 // tslint:disable-next-line: no-invalid-this
                 if (!this.app || !this.app.config) {
                     cacheFlag = false;
-                    logger.error("The class must have Koatty.app attributes.");
+                    logger.Error("The class must have Koatty.app attributes.");
                 }
 
-                // tslint:disable-next-line: one-variable-per-declaration
-                let cacheStore: StoreInterface;
                 if (cacheFlag) {
-                    // tslint:disable-next-line: no-invalid-this
-                    cacheStore = this.app.cacheStore;
-                    if (!cacheStore || !helper.isFunction(cacheStore.get)) {
+                    if (!cacheStore.store || !helper.isFunction(cacheStore.store.get)) {
                         cacheFlag = false;
-                        logger.warn(`Redis connection failed. @CacheEvict is not executed. `);
+                        logger.Warn(`Please use @EnableCacheStore to enable cache storage in App.ts. `);
                     }
                 }
 
@@ -275,9 +234,9 @@ export function CacheEvict(cacheName: string, paramKey?: number | number[], even
 
                     if (eventTime === "Before") {
                         if (!helper.isTrueEmpty(key)) {
-                            await cacheStore.del(`${cacheName}:${key}`).catch((): any => null);
+                            await cacheStore.store.del(`${cacheName}:${key}`).catch((): any => null);
                         } else {
-                            await cacheStore.del(cacheName).catch((): any => null);
+                            await cacheStore.store.del(cacheName).catch((): any => null);
                         }
                         // tslint:disable-next-line: no-invalid-this
                         return value.apply(this, props);
@@ -285,9 +244,9 @@ export function CacheEvict(cacheName: string, paramKey?: number | number[], even
                         // tslint:disable-next-line: no-invalid-this
                         const res = await value.apply(this, props);
                         if (!helper.isTrueEmpty(key)) {
-                            await cacheStore.del(`${cacheName}:${key}`).catch((): any => null);
+                            await cacheStore.store.del(`${cacheName}:${key}`).catch((): any => null);
                         } else {
-                            await cacheStore.del(cacheName).catch((): any => null);
+                            await cacheStore.store.del(cacheName).catch((): any => null);
                         }
                         return res;
                     }
