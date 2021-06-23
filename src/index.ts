@@ -1,7 +1,7 @@
 /*
  * @Author: richen
  * @Date: 2020-07-06 19:53:43
- * @LastEditTime: 2020-12-01 19:16:17
+ * @LastEditTime: 2021-06-23 14:31:38
  * @Description:
  * @Copyright (c) - <richenlin(at)gmail.com>
  */
@@ -39,7 +39,7 @@ async function InitRedisConn(app: Application): Promise<RedisStore> {
     if (!cacheStore.store) {
         cacheStore.store = Store.getInstance(opt);
     }
-    if (!cacheStore.store || !helper.isFunction(cacheStore.store.connect)) {
+    if (!cacheStore.store || !helper.isFunction(cacheStore.store.getConnection)) {
         throw Error(`Redis connection failed. `);
     }
 
