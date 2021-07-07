@@ -1,23 +1,22 @@
 /*
  * @Author: richen
  * @Date: 2020-07-06 19:53:43
- * @LastEditTime: 2021-06-23 14:31:38
+ * @LastEditTime: 2021-07-07 11:11:05
  * @Description:
  * @Copyright (c) - <richenlin(at)gmail.com>
  */
 import * as helper from "koatty_lib";
 import { DefaultLogger as logger } from "koatty_logger";
-import { RedisStore, Store, StoreOptions } from "koatty_store";
-import { Application, IOCContainer, TAGGED_CLS } from 'koatty_container';
+import { CacheStore, Store, StoreOptions } from "koatty_store";
+import { Application, IOCContainer } from 'koatty_container';
 
-const APP_READY_HOOK = "APP_READY_HOOK";
 /**
  * 
  *
  * @interface CacheStoreInterface
  */
 interface CacheStoreInterface {
-    store?: RedisStore;
+    store?: CacheStore;
 }
 
 // cacheStore
@@ -26,44 +25,34 @@ const cacheStore: CacheStoreInterface = {
 };
 
 /**
- * initiation redis connection and client.
+ * get instances of cacheStore
  *
- * @param {Application} app
- * @returns {*}  {Promise<RedisStore>}
+ * @export
+ * @returns {*}  
  */
-async function InitRedisConn(app: Application): Promise<RedisStore> {
-    const opt: StoreOptions = app.config("Cache", "db") || app.config("redis", "db");
+export async function GetCacheStore(app: Application) {
+    if (cacheStore.store && cacheStore.store.getConnection) {
+        return cacheStore.store;
+    }
+    const opt: StoreOptions = app.config("CacheStore", "db") ?? {};
     if (helper.isEmpty(opt)) {
-        throw Error("Missing redis server configuration. Please write a configuration item with the key name 'Cache' or 'redis' in the db.ts file.");
+        logger.Warn(`Missing CacheStore server configuration. Please write a configuration item with the key name 'CacheStore' in the db.ts file.`);
     }
-    if (!cacheStore.store) {
-        cacheStore.store = Store.getInstance(opt);
+    cacheStore.store = Store.getInstance(opt);
+    if (!helper.isFunction(cacheStore.store.getConnection)) {
+        throw Error(`CacheStore connection failed. `);
     }
-    if (!cacheStore.store || !helper.isFunction(cacheStore.store.getConnection)) {
-        throw Error(`Redis connection failed. `);
-    }
-
-    // set app.cacheStore
-    helper.define(app, "cacheStore", cacheStore, true);
-    IOCContainer.setApp(app);
-
     return cacheStore.store;
 }
 
 /**
- * Enable redis cache store.
- * Need configuration item with the key name 'Cache' or 'redis' in the db.ts file
- * @export
- * @returns {*} 
+ * initiation CacheStore connection and client.
+ *
+ * @param {Application} app
+ * @returns {*}  {Promise<CacheStore>}
  */
-export function EnableCacheStore(): ClassDecorator {
-    logger.Custom('think', '', 'EnableCacheStore');
-    return (target: any) => {
-        if (!(target.__proto__.name === "Koatty")) {
-            throw new Error(`class does not inherit from Koatty`);
-        }
-        IOCContainer.attachClassMetadata(TAGGED_CLS, APP_READY_HOOK, InitRedisConn, target);
-    };
+async function InitCacheStore(app: Application): Promise<CacheStore> {
+    return GetCacheStore(app);
 }
 
 /**
@@ -92,49 +81,38 @@ export function CacheAble(cacheName: string, paramKey?: number | number[], timeo
             writable: true,
             async value(...props: any[]) {
                 let cacheFlag = true;
-                // tslint:disable-next-line: no-invalid-this
-                if (!this.app || !this.app.config) {
+                const store: CacheStore = await GetCacheStore(this.app).catch(() => {
                     cacheFlag = false;
-                    logger.Error("The class must have Koatty.app attributes.");
-                }
-
-                // tslint:disable-next-line: one-variable-per-declaration
-                if (cacheFlag) {
-                    if (!cacheStore.store || !helper.isFunction(cacheStore.store.get)) {
-                        cacheFlag = false;
-                        logger.Warn(`Please use @EnableCacheStore to enable cache storage in App.ts. `);
-                    }
-                }
-
+                    logger.Error("Get cache store instance failed.");
+                    return null;
+                });
                 if (cacheFlag) {
                     // tslint:disable-next-line: one-variable-per-declaration
                     let key = "", res;
-                    if (helper.isNumber(paramKey)) {
-                        if (helper.isArray(paramKey)) {
-                            (<number[]>paramKey).map((it: any) => {
-                                if (!helper.isTrueEmpty(props[it])) {
-                                    if (typeof props[it] === "object") {
-                                        key = `${key}${helper.murmurHash(JSON.stringify(props[it]))}`;
-                                    } else {
-                                        key = `${key}${props[it] || ''}`;
-                                    }
+                    if (helper.isArray(paramKey)) {
+                        (<number[]>paramKey).map((it: any) => {
+                            if (!helper.isTrueEmpty(props[it])) {
+                                if (typeof props[it] === "object") {
+                                    key = `${key}${helper.murmurHash(JSON.stringify(props[it]))}`;
+                                } else {
+                                    key = `${key}${props[it] || ''}`;
                                 }
-                            });
-                        } else {
-                            if (typeof props[(<number>paramKey)] === "object") {
-                                key = helper.murmurHash(JSON.stringify(props[(<number>paramKey)]));
-                            } else {
-                                key = props[(<number>paramKey)] || "";
                             }
+                        });
+                    } else if (helper.isNumber(paramKey)) {
+                        if (typeof props[(<number>paramKey)] === "object") {
+                            key = helper.murmurHash(JSON.stringify(props[(<number>paramKey)]));
+                        } else {
+                            key = props[(<number>paramKey)] || "";
                         }
                     } else {
                         key = `${identifier}:${methodName}`;
                     }
 
                     if (!helper.isTrueEmpty(key)) {
-                        res = await cacheStore.store.get(`${cacheName}:${key}`).catch((): any => null);
+                        res = await store.get(`${cacheName}:${key}`).catch((): any => null);
                     } else {
-                        res = await cacheStore.store.get(cacheName).catch((): any => null);
+                        res = await store.get(cacheName).catch((): any => null);
                     }
                     try {
                         res = JSON.parse(res || "");
@@ -151,9 +129,9 @@ export function CacheAble(cacheName: string, paramKey?: number | number[], timeo
                             timeout = 60;
                         }
                         if (!helper.isTrueEmpty(key)) {
-                            cacheStore.store.set(`${cacheName}:${key}`, JSON.stringify(res), timeout).catch((): any => null);
+                            store.set(`${cacheName}:${key}`, JSON.stringify(res), timeout).catch((): any => null);
                         } else {
-                            cacheStore.store.set(cacheName, JSON.stringify(res), timeout).catch((): any => null);
+                            store.set(cacheName, JSON.stringify(res), timeout).catch((): any => null);
                         }
                     }
                     return res;
@@ -163,8 +141,21 @@ export function CacheAble(cacheName: string, paramKey?: number | number[], timeo
                 }
             }
         };
+        // bind app_ready hook event 
+        bindSchedulerLockInit();
         return descriptor;
     };
+}
+
+/**
+ * bind scheduler lock init event
+ *
+ */
+const bindSchedulerLockInit = function () {
+    const app = IOCContainer.getApp();
+    app && app.once("appStart", async function () {
+        await InitCacheStore(app);
+    })
 }
 
 /**
@@ -195,38 +186,30 @@ export function CacheEvict(cacheName: string, paramKey?: number | number[], even
             writable: true,
             async value(...props: any[]) {
                 let cacheFlag = true;
-                // tslint:disable-next-line: no-invalid-this
-                if (!this.app || !this.app.config) {
+                const store: CacheStore = await GetCacheStore(this.app).catch(() => {
                     cacheFlag = false;
-                    logger.Error("The class must have Koatty.app attributes.");
-                }
-
-                if (cacheFlag) {
-                    if (!cacheStore.store || !helper.isFunction(cacheStore.store.get)) {
-                        cacheFlag = false;
-                        logger.Warn(`Please use @EnableCacheStore to enable cache storage in App.ts. `);
-                    }
-                }
+                    logger.Error("Get cache store instance failed.");
+                    return null;
+                });
 
                 if (cacheFlag) {
                     let key = "";
-                    if (helper.isNumber(paramKey)) {
-                        if (helper.isArray(paramKey)) {
-                            (<number[]>paramKey).map((it: any) => {
-                                if (!helper.isTrueEmpty(props[it])) {
-                                    if (typeof props[it] === "object") {
-                                        key = `${key}${helper.murmurHash(JSON.stringify(props[it]))}`;
-                                    } else {
-                                        key = `${key}${props[it] || ''}`;
-                                    }
+
+                    if (helper.isArray(paramKey)) {
+                        (<number[]>paramKey).map((it: any) => {
+                            if (!helper.isTrueEmpty(props[it])) {
+                                if (typeof props[it] === "object") {
+                                    key = `${key}${helper.murmurHash(JSON.stringify(props[it]))}`;
+                                } else {
+                                    key = `${key}${props[it] || ''}`;
                                 }
-                            });
-                        } else {
-                            if (typeof props[(<number>paramKey)] === "object") {
-                                key = helper.murmurHash(JSON.stringify(props[(<number>paramKey)]));
-                            } else {
-                                key = props[(<number>paramKey)] || "";
                             }
+                        });
+                    } else if (helper.isNumber(paramKey)) {
+                        if (typeof props[(<number>paramKey)] === "object") {
+                            key = helper.murmurHash(JSON.stringify(props[(<number>paramKey)]));
+                        } else {
+                            key = props[(<number>paramKey)] || "";
                         }
                     } else {
                         key = `${identifier}:${methodName}`;
@@ -234,9 +217,9 @@ export function CacheEvict(cacheName: string, paramKey?: number | number[], even
 
                     if (eventTime === "Before") {
                         if (!helper.isTrueEmpty(key)) {
-                            await cacheStore.store.del(`${cacheName}:${key}`).catch((): any => null);
+                            await store.del(`${cacheName}:${key}`).catch((): any => null);
                         } else {
-                            await cacheStore.store.del(cacheName).catch((): any => null);
+                            await store.del(cacheName).catch((): any => null);
                         }
                         // tslint:disable-next-line: no-invalid-this
                         return value.apply(this, props);
@@ -244,9 +227,9 @@ export function CacheEvict(cacheName: string, paramKey?: number | number[], even
                         // tslint:disable-next-line: no-invalid-this
                         const res = await value.apply(this, props);
                         if (!helper.isTrueEmpty(key)) {
-                            await cacheStore.store.del(`${cacheName}:${key}`).catch((): any => null);
+                            await store.del(`${cacheName}:${key}`).catch((): any => null);
                         } else {
-                            await cacheStore.store.del(cacheName).catch((): any => null);
+                            await store.del(cacheName).catch((): any => null);
                         }
                         return res;
                     }
