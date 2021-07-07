@@ -1,6 +1,6 @@
 {
     "name": "koatty_cacheable",
-    "version": "1.2.10",
+    "version": "1.2.11",
     "description": "Cacheable for koatty.",
     "scripts": {
         "build": "del-cli --force dist && tsc",
