@@ -1325,7 +1325,7 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@outofsync/memory-cache@^1.3.0":
+"@outofsync/memory-cache@^1.4.1":
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/@outofsync/memory-cache/-/memory-cache-1.4.1.tgz#0eb3a88bba69bec4422a71304c69ee50ee4b9d5c"
   integrity sha512-feudXqyd0bsDnMZhC+0T/OmhYBx2YqYsMVPbgn/TgGL8O5sxuYAjA66xyj6I3CdNNmebtCjOzXUdDXSvg7zr4A==
@@ -1499,7 +1499,7 @@
   resolved "https://registry.yarnpkg.com/@types/http-errors/-/http-errors-1.8.1.tgz#e81ad28a60bee0328c6d2384e029aec626f1ae67"
   integrity sha512-e+2rjEwK6KDaNOm5Aa9wNGgyS9oSZU/4pfSMMPYNOfjvFI0WVXm29+ITRFr6aKDvvKo7uU1jV68MW4ScsfDi7Q==
 
-"@types/ioredis@^4.27.4":
+"@types/ioredis@^4.x.x":
   version "4.28.1"
   resolved "https://registry.yarnpkg.com/@types/ioredis/-/ioredis-4.28.1.tgz#27d66f4c0540145826d984b6d0a5b54bbb88c32a"
   integrity sha512-raYHPqRWrfnEoym94BY28mG1+tcZqh3dsp2q7x5IyMAAEvIdu+H0X8diASMpncIm+oHyH9dalOeOnGOL/YnuOA==
@@ -2591,9 +2591,9 @@ dotgitignore@^2.1.0:
     minimatch "^3.0.4"
 
 electron-to-chromium@^1.3.896:
-  version "1.3.903"
-  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.3.903.tgz#e2d3c3809f4ef05fdbe5cc88969dfc94b1bd15b9"
-  integrity sha512-+PnYAyniRRTkNq56cqYDLq9LyklZYk0hqoDy9GpcU11H5QjRmFZVDbxtgHUMK/YzdNTcn1XWP5gb+hFlSCr20g==
+  version "1.3.904"
+  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.3.904.tgz#52a353994faeb0f2a9fab3606b4e0614d1af7b58"
+  integrity sha512-x5uZWXcVNYkTh4JubD7KSC1VMKz0vZwJUqVwY3ihsW0bst1BXDe494Uqbg3Y0fDGVjJqA8vEeGuvO5foyH2+qw==
 
 emittery@^0.8.1:
   version "0.8.1"
@@ -2960,7 +2960,7 @@ functional-red-black-tree@^1.0.1:
   resolved "https://registry.yarnpkg.com/functional-red-black-tree/-/functional-red-black-tree-1.0.1.tgz#1b0ab3bd553b2a0d6399d29c0e3ea0b252078327"
   integrity sha1-GwqzvVU7Kg1jmdKcDj6gslIHgyc=
 
-generic-pool@^3.7.8:
+generic-pool@^3.8.2:
   version "3.8.2"
   resolved "https://registry.yarnpkg.com/generic-pool/-/generic-pool-3.8.2.tgz#aab4f280adb522fdfbdc5e5b64d718d3683f04e9"
   integrity sha512-nGToKy6p3PAbYQ7p1UlWl6vSPwfwU6TMSWK7TTu+WUY4ZjyZQGniGGt2oNVvyNSpyZYSB43zMXVLcBm08MTMkg==
@@ -3261,7 +3261,7 @@ ini@^1.3.2, ini@^1.3.4:
   resolved "https://registry.yarnpkg.com/ini/-/ini-1.3.8.tgz#a29da425b48806f34767a4efce397269af28432c"
   integrity sha512-JV/yugV2uzW5iMRSiZAyDtQd+nxtUnjeLt0acNdw98kKLrvuRVyB80tsREOE7yvGVgalhZ6RNXCmEHkUKBKxew==
 
-ioredis@^4.27.9:
+ioredis@^4.28.0:
   version "4.28.0"
   resolved "https://registry.yarnpkg.com/ioredis/-/ioredis-4.28.0.tgz#5a2be3f37ff2075e2332f280eaeb02ab4d9ff0d3"
   integrity sha512-I+zkeeWp3XFgPT2CtJKxvaF5FjGBGt4yGYljRjQecdQKteThuAsKqffeF1lgHVlYnuNeozRbPOCDNZ7tDWPeig==
@@ -4005,14 +4005,14 @@ koatty_logger@^1.x.x:
     koatty_lib "^1.x.x"
 
 koatty_store@^1.x.x:
-  version "1.4.9"
-  resolved "https://registry.yarnpkg.com/koatty_store/-/koatty_store-1.4.9.tgz#45c995f5d4b43c47e50ba4b6e4dbd94d48c7293b"
-  integrity sha512-WIU5j7EdPzkg/hXC43MMPg6RHGbYnwhSJ6KrL2aFjA3QYriN7xaUdNM5eUBB+MjTCjToRsaJVy7bDao6zuJQKQ==
+  version "1.4.10"
+  resolved "https://registry.yarnpkg.com/koatty_store/-/koatty_store-1.4.10.tgz#184c84047b9e2d643f407544b9282a224e34d393"
+  integrity sha512-Nkz6zD+uH4wspufiJn9fTjOZkxkJan4bZByack5sFFZlRc4+16K0xWgSkk3Bblldgt92PswiNNXYwSO8txfpTg==
   dependencies:
-    "@outofsync/memory-cache" "^1.3.0"
-    "@types/ioredis" "^4.27.4"
-    generic-pool "^3.7.8"
-    ioredis "^4.27.9"
+    "@outofsync/memory-cache" "^1.4.1"
+    "@types/ioredis" "^4.x.x"
+    generic-pool "^3.8.2"
+    ioredis "^4.28.0"
     koatty_lib "^1.x.x"
     koatty_logger "^1.x.x"
 
