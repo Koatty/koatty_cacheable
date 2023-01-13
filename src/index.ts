@@ -1,7 +1,7 @@
 /*
  * @Author: richen
  * @Date: 2020-07-06 19:53:43
- * @LastEditTime: 2021-12-02 16:20:52
+ * @LastEditTime: 2023-01-13 14:16:02
  * @Description:
  * @Copyright (c) - <richenlin(at)gmail.com>
  */
@@ -16,12 +16,12 @@ import { Application, IOCContainer } from 'koatty_container';
  * @interface CacheStoreInterface
  */
 interface CacheStoreInterface {
-    store?: CacheStore;
+  store?: CacheStore;
 }
 
 // cacheStore
 const cacheStore: CacheStoreInterface = {
-    store: null
+  store: null
 };
 
 /**
@@ -32,18 +32,18 @@ const cacheStore: CacheStoreInterface = {
  * @returns {*}  {CacheStore}
  */
 export async function GetCacheStore(app: Application): Promise<CacheStore> {
-    if (cacheStore.store && cacheStore.store.getConnection) {
-        return cacheStore.store;
-    }
-    const opt: StoreOptions = app.config("CacheStore", "db") ?? {};
-    if (helper.isEmpty(opt)) {
-        logger.Warn(`Missing CacheStore server configuration. Please write a configuration item with the key name 'CacheStore' in the db.ts file.`);
-    }
-    cacheStore.store = Store.getInstance(opt);
-    if (!helper.isFunction(cacheStore.store.getConnection)) {
-        throw Error(`CacheStore connection failed. `);
-    }
+  if (cacheStore.store && cacheStore.store.getConnection) {
     return cacheStore.store;
+  }
+  const opt: StoreOptions = app.config("CacheStore", "db") ?? {};
+  if (helper.isEmpty(opt)) {
+    logger.Warn(`Missing CacheStore server configuration. Please write a configuration item with the key name 'CacheStore' in the db.ts file.`);
+  }
+  cacheStore.store = Store.getInstance(opt);
+  if (!helper.isFunction(cacheStore.store.getConnection)) {
+    throw Error(`CacheStore connection failed. `);
+  }
+  return cacheStore.store;
 }
 
 /**
@@ -51,10 +51,10 @@ export async function GetCacheStore(app: Application): Promise<CacheStore> {
  *
  */
 async function InitCacheStore() {
-    const app = IOCContainer.getApp();
-    app && app.once("appStart", async function () {
-        await GetCacheStore(app);
-    })
+  const app = IOCContainer.getApp();
+  app && app.once("appStart", async function () {
+    await GetCacheStore(app);
+  })
 }
 
 /**
@@ -68,58 +68,58 @@ async function InitCacheStore() {
  * @returns {MethodDecorator}
  */
 export function CacheAble(cacheName: string, timeout = 3600): MethodDecorator {
-    return (target: any, methodName: string, descriptor: PropertyDescriptor) => {
-        const componentType = IOCContainer.getType(target);
-        if (componentType !== "SERVICE" && componentType !== "COMPONENT") {
-            throw Error("This decorator only used in the service、component class.");
-        }
-        let identifier = IOCContainer.getIdentifier(target);
-        identifier = identifier || (target.constructor ? (target.constructor.name || "") : "");
-        const { value, configurable, enumerable } = descriptor;
-        descriptor = {
-            configurable,
-            enumerable,
-            writable: true,
-            async value(...props: any[]) {
-                let cacheFlag = true;
-                const store: CacheStore = await GetCacheStore(this.app).catch(() => {
-                    cacheFlag = false;
-                    logger.Error("Get cache store instance failed.");
-                    return null;
-                });
-                if (cacheFlag) {
-                    // tslint:disable-next-line: one-variable-per-declaration
-                    let key = "", res;
-                    if (props && props.length > 0) {
-                        key = `${identifier}:${methodName}:${helper.murmurHash(JSON.stringify(props))}`;
-                    } else {
-                        key = `${identifier}:${methodName}`;
-                    }
+  return (target: any, methodName: string, descriptor: PropertyDescriptor) => {
+    const componentType = IOCContainer.getType(target);
+    if (componentType !== "SERVICE" && componentType !== "COMPONENT") {
+      throw Error("This decorator only used in the service、component class.");
+    }
+    let identifier = IOCContainer.getIdentifier(target);
+    identifier = identifier || (target.constructor ? (target.constructor.name || "") : "");
+    const { value, configurable, enumerable } = descriptor;
+    descriptor = {
+      configurable,
+      enumerable,
+      writable: true,
+      async value(...props: any[]) {
+        let cacheFlag = true;
+        const store: CacheStore = await GetCacheStore(this.app).catch(() => {
+          cacheFlag = false;
+          logger.Error("Get cache store instance failed.");
+          return null;
+        });
+        if (cacheFlag) {
+          // tslint:disable-next-line: one-variable-per-declaration
+          let key = "", res;
+          if (props && props.length > 0) {
+            key = `${identifier}:${methodName}:${helper.murmurHash(JSON.stringify(props))}`;
+          } else {
+            key = `${identifier}:${methodName}`;
+          }
 
-                    res = await store.hget(cacheName, key).catch((): any => null);
-                    if (!helper.isEmpty(res)) {
-                        return JSON.parse(res);
-                    }
-                    // tslint:disable-next-line: no-invalid-this
-                    res = await value.apply(this, props);
-                    // prevent cache penetration
-                    if (helper.isEmpty(res)) {
-                        res = "";
-                        timeout = 60;
-                    }
-                    // async set store
-                    store.hset(cacheName, key, JSON.stringify(res), timeout).catch((): any => null);
-                    return res;
-                } else {
-                    // tslint:disable-next-line: no-invalid-this
-                    return value.apply(this, props);
-                }
-            }
-        };
-        // bind app_ready hook event 
-        InitCacheStore();
-        return descriptor;
+          res = await store.hget(cacheName, key).catch((): any => null);
+          if (!helper.isEmpty(res)) {
+            return JSON.parse(res);
+          }
+          // tslint:disable-next-line: no-invalid-this
+          res = await value.apply(this, props);
+          // prevent cache penetration
+          if (helper.isEmpty(res)) {
+            res = "";
+            timeout = 60;
+          }
+          // async set store
+          store.hset(cacheName, key, JSON.stringify(res), timeout).catch((): any => null);
+          return res;
+        } else {
+          // tslint:disable-next-line: no-invalid-this
+          return value.apply(this, props);
+        }
+      }
     };
+    // bind app_ready hook event 
+    InitCacheStore();
+    return descriptor;
+  };
 }
 
 /**
@@ -136,45 +136,45 @@ export type eventTimes = "Before" | "After";
  * @returns
  */
 export function CacheEvict(cacheName: string, eventTime: eventTimes = "Before") {
-    return (target: any, methodName: string, descriptor: PropertyDescriptor) => {
-        const componentType = IOCContainer.getType(target);
-        if (componentType !== "SERVICE" && componentType !== "COMPONENT") {
-            throw Error("This decorator only used in the service、component class.");
-        }
-        const identifier = IOCContainer.getIdentifier(target);
-        const { value, configurable, enumerable } = descriptor;
-        descriptor = {
-            configurable,
-            enumerable,
-            writable: true,
-            async value(...props: any[]) {
-                let cacheFlag = true;
-                const store: CacheStore = await GetCacheStore(this.app).catch(() => {
-                    cacheFlag = false;
-                    logger.Error("Get cache store instance failed.");
-                    return null;
-                });
+  return (target: any, methodName: string, descriptor: PropertyDescriptor) => {
+    const componentType = IOCContainer.getType(target);
+    if (componentType !== "SERVICE" && componentType !== "COMPONENT") {
+      throw Error("This decorator only used in the service、component class.");
+    }
+    const identifier = IOCContainer.getIdentifier(target);
+    const { value, configurable, enumerable } = descriptor;
+    descriptor = {
+      configurable,
+      enumerable,
+      writable: true,
+      async value(...props: any[]) {
+        let cacheFlag = true;
+        const store: CacheStore = await GetCacheStore(this.app).catch(() => {
+          cacheFlag = false;
+          logger.Error("Get cache store instance failed.");
+          return null;
+        });
 
-                if (cacheFlag) {
-                    if (eventTime === "Before") {
-                        await store.del(cacheName).catch((): any => null);
-                        // tslint:disable-next-line: no-invalid-this
-                        return value.apply(this, props);
-                    } else {
-                        // tslint:disable-next-line: no-invalid-this
-                        const res = await value.apply(this, props);
-                        store.del(cacheName).catch((): any => null);
-                        return res;
-                    }
-                } else {
-                    // tslint:disable-next-line: no-invalid-this
-                    return value.apply(this, props);
-                }
-            }
-        };
-        // bind app_ready hook event 
-        InitCacheStore();
-        return descriptor;
+        if (cacheFlag) {
+          if (eventTime === "Before") {
+            await store.del(cacheName).catch((): any => null);
+            // tslint:disable-next-line: no-invalid-this
+            return value.apply(this, props);
+          } else {
+            // tslint:disable-next-line: no-invalid-this
+            const res = await value.apply(this, props);
+            store.del(cacheName).catch((): any => null);
+            return res;
+          }
+        } else {
+          // tslint:disable-next-line: no-invalid-this
+          return value.apply(this, props);
+        }
+      }
     };
+    // bind app_ready hook event 
+    InitCacheStore();
+    return descriptor;
+  };
 }
 
