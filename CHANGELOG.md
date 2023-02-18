@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.0](https://github.com/thinkkoa/koatty_cacheable/compare/v1.4.0...v1.5.0) (2023-02-18)
+
+
+### Bug Fixes
+
+* 启动时链接 ([e7ec709](https://github.com/thinkkoa/koatty_cacheable/commit/e7ec7094be106e4e48783c9b214b8369e8a18297))
+* 获取单例 ([0759972](https://github.com/thinkkoa/koatty_cacheable/commit/0759972adf7e86312f60f0bf77604bddf06ce0de))
+
 ## [1.4.0](https://github.com/thinkkoa/koatty_cacheable/compare/v1.3.8...v1.4.0) (2023-02-18)
 
 
