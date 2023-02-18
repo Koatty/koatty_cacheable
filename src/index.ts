@@ -1,7 +1,7 @@
 /*
  * @Author: richen
  * @Date: 2020-07-06 19:53:43
- * @LastEditTime: 2023-02-19 01:14:50
+ * @LastEditTime: 2023-02-19 01:16:52
  * @Description:
  * @Copyright (c) - <richenlin(at)gmail.com>
  */
@@ -45,6 +45,7 @@ export async function GetCacheStore(app: Application): Promise<CacheStore> {
   if (!Helper.isFunction(storeCache.store.getConnection)) {
     throw Error(`CacheStore connection failed. `);
   }
+  await storeCache.store.client.getConnection();
   return storeCache.store;
 }
 
