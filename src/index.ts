@@ -1,13 +1,13 @@
 /*
  * @Author: richen
  * @Date: 2020-07-06 19:53:43
- * @LastEditTime: 2023-02-18 16:13:20
+ * @LastEditTime: 2023-02-19 00:04:36
  * @Description:
  * @Copyright (c) - <richenlin(at)gmail.com>
  */
 import { Helper } from "koatty_lib";
 import { DefaultLogger as logger } from "koatty_logger";
-import { CacheStore, Store, StoreOptions } from "koatty_store";
+import { CacheStore, StoreOptions } from "koatty_store";
 import { Application, IOCContainer } from 'koatty_container';
 
 /**
@@ -21,31 +21,31 @@ interface CacheStoreInterface {
 
 const PreKey = "k";
 
-// cacheStore
-const cacheStore: CacheStoreInterface = {
+// storeCache
+const storeCache: CacheStoreInterface = {
   store: null
 };
 
 /**
- * get instances of cacheStore
+ * get instances of storeCache
  *
  * @export
  * @param {Application} app
  * @returns {*}  {CacheStore}
  */
 export async function GetCacheStore(app: Application): Promise<CacheStore> {
-  if (cacheStore.store && cacheStore.store.getConnection) {
-    return cacheStore.store;
+  if (storeCache.store && storeCache.store.getConnection) {
+    return storeCache.store;
   }
   const opt: StoreOptions = app.config("CacheStore", "db") ?? {};
   if (Helper.isEmpty(opt)) {
     logger.Warn(`Missing CacheStore server configuration. Please write a configuration item with the key name 'CacheStore' in the db.ts file.`);
   }
-  cacheStore.store = Store.getInstance(opt);
-  if (!Helper.isFunction(cacheStore.store.getConnection)) {
+  storeCache.store = new CacheStore(opt);
+  if (!Helper.isFunction(storeCache.store.getConnection)) {
     throw Error(`CacheStore connection failed. `);
   }
-  return cacheStore.store;
+  return storeCache.store;
 }
 
 /**
@@ -64,7 +64,7 @@ async function InitCacheStore() {
  * @return {*}
  */
 export interface CacheAbleOpt {
-  props?: any[];
+  params?: string[];
   timeout?: number;
 }
 
@@ -76,10 +76,16 @@ export interface CacheAbleOpt {
  * @export
  * @param {string} cacheName cache name
  * @param {CacheAbleOpt} [opt] cache options
+ * e.g: 
+ * {
+ *  params: ["id"],
+ *  timeout: 30
+ * }
+ * Use the 'id' parameters of the method as cache subkeys, the cache expiration time 30s
  * @returns {MethodDecorator}
  */
 export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
-  props: [],
+  params: [],
   timeout: 3600,
 }): MethodDecorator {
   return (target: any, methodName: string, descriptor: PropertyDescriptor) => {
@@ -89,6 +95,8 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
     }
 
     const { value, configurable, enumerable } = descriptor;
+    // 获取定义的参数位置
+    const paramIndexes = getParamIndex(opt.params, getArgs(value));
     descriptor = {
       configurable,
       enumerable,
@@ -104,17 +112,15 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
           // tslint:disable-next-line: one-variable-per-declaration
           let key = PreKey;
           if (props && props.length > 0) {
-            if (opt.props && opt.props.length > 0) {
-              for (const item of opt.props) {
-                if (props[item] !== undefined) {
-                  const value = Helper.toString(props[item]);
-                  key += `:${value}`;
-                }
+            for (const item of paramIndexes) {
+              if (props[item] !== undefined) {
+                const value = Helper.toString(props[item]);
+                key += `:${value}`;
               }
-              // 防止key超长
-              if (key.length > 32) {
-                key = Helper.murmurHash(key);
-              }
+            }
+            // 防止key超长
+            if (key.length > 32) {
+              key = Helper.murmurHash(key);
             }
           }
 
@@ -128,6 +134,9 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
           if (Helper.isEmpty(res)) {
             res = "";
             opt.timeout = 5;
+          }
+          if (!opt.timeout) {
+            opt.timeout = 3600;
           }
           // async set store
           store.set(`${cacheName}:${key}`, JSON.stringify(res), opt.timeout).catch((): any => null);
@@ -154,7 +163,7 @@ export type eventTimes = "Before" | "After";
  * @return {*}
  */
 export interface CacheEvictOpt {
-  props?: any[];
+  params?: string[];
   eventTime?: "Before";
 }
 
@@ -164,6 +173,12 @@ export interface CacheEvictOpt {
  * @export
  * @param {string} cacheName cacheName cache name
  * @param {CacheEvictOpt} [opt] cache options
+ * e.g: 
+ * {
+ *  params: ["id"],
+ *  eventTime: "Before"
+ * }
+ * Use the 'id' parameters of the method as cache subkeys, and clear the cache before the method executed
  * @returns
  */
 export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
@@ -175,6 +190,8 @@ export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
       throw Error("This decorator only used in the service、component class.");
     }
     const { value, configurable, enumerable } = descriptor;
+    // 获取定义的参数位置
+    const paramIndexes = getParamIndex(opt.params, getArgs(value));
     descriptor = {
       configurable,
       enumerable,
@@ -190,17 +207,15 @@ export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
         if (cacheFlag) {
           let key = PreKey;
           if (props && props.length > 0) {
-            if (opt.props && opt.props.length > 0) {
-              for (const item of opt.props) {
-                if (props[item] !== undefined) {
-                  const value = Helper.toString(props[item]);
-                  key += `:${value}`;
-                }
+            for (const item of paramIndexes) {
+              if (props[item] !== undefined) {
+                const value = Helper.toString(props[item]);
+                key += `:${value}`;
               }
-              // 防止key超长
-              if (key.length > 32) {
-                key = Helper.murmurHash(key);
-              }
+            }
+            // 防止key超长
+            if (key.length > 32) {
+              key = Helper.murmurHash(key);
             }
           }
 
@@ -226,3 +241,39 @@ export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
   };
 }
 
+/**
+ * @description: 
+ * @param {*} func
+ * @return {*}
+ */
+function getArgs(func: Function) {
+  // 首先匹配函数括弧里的参数
+  const args = func.toString().match(/.*?\(([^)]*)\)/);
+  if (args.length > 1) {
+    // 分解参数成数组
+    return args[1].split(",").map(function (a) {
+      // 去空格和内联注释
+      return a.replace(/\/\*.*\*\//, "").trim();
+    }).filter(function (ae) {
+      // 确保没有undefineds
+      return ae;
+    });
+  }
+  return [];
+}
+
+/**
+ * @description: 
+ * @param {string} params
+ * @param {string} args
+ * @return {*}
+ */
+function getParamIndex(params: string[], args: string[]): number[] {
+  const res = [];
+  for (let i = 0; i < params.length; i++) {
+    if (params.includes(params[i])) {
+      res.push(i);
+    }
+  }
+  return res;
+}

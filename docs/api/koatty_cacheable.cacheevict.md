@@ -10,7 +10,7 @@ Decorating the execution of this method will trigger a cache clear operation. Re
 <b>Signature:</b>
 
 ```typescript
-export declare function CacheEvict(cacheName: string, eventTime?: eventTimes): (target: any, methodName: string, descriptor: PropertyDescriptor) => PropertyDescriptor;
+export declare function CacheEvict(cacheName: string, opt?: CacheEvictOpt): (target: any, methodName: string, descriptor: PropertyDescriptor) => PropertyDescriptor;
 ```
 
 ## Parameters
@@ -18,7 +18,7 @@ export declare function CacheEvict(cacheName: string, eventTime?: eventTimes): (
 |  Parameter | Type | Description |
 |  --- | --- | --- |
 |  cacheName | string | cacheName cache name |
-|  eventTime | [eventTimes](./koatty_cacheable.eventtimes.md) | <i>(Optional)</i> |
+|  opt | [CacheEvictOpt](./koatty_cacheable.cacheevictopt.md) | <i>(Optional)</i> cache options e.g: { params: \["id"\], eventTime: "Before" } Use the 'id' parameters of the method as cache subkeys, and clear the cache before the method executed |
 
 <b>Returns:</b>
 

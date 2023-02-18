@@ -10,7 +10,7 @@ Decorate this method to support caching. Redis server config from db.ts. The cac
 <b>Signature:</b>
 
 ```typescript
-export declare function CacheAble(cacheName: string, timeout?: number): MethodDecorator;
+export declare function CacheAble(cacheName: string, opt?: CacheAbleOpt): MethodDecorator;
 ```
 
 ## Parameters
@@ -18,7 +18,7 @@ export declare function CacheAble(cacheName: string, timeout?: number): MethodDe
 |  Parameter | Type | Description |
 |  --- | --- | --- |
 |  cacheName | string | cache name |
-|  timeout | number | <i>(Optional)</i> cache timeout |
+|  opt | [CacheAbleOpt](./koatty_cacheable.cacheableopt.md) | <i>(Optional)</i> cache options e.g: { params: \["id"\], timeout: 30 } Use the 'id' parameters of the method as cache subkeys, the cache expiration time 30s |
 
 <b>Returns:</b>
 

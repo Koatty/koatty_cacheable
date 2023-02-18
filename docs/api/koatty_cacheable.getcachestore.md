@@ -4,7 +4,7 @@
 
 ## GetCacheStore() function
 
-get instances of cacheStore
+get instances of storeCache
 
 
 <b>Signature:</b>
