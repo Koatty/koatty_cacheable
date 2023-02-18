@@ -1,7 +1,7 @@
 /*
  * @Author: richen
  * @Date: 2020-07-06 19:53:43
- * @LastEditTime: 2023-02-19 00:04:36
+ * @LastEditTime: 2023-02-19 01:14:50
  * @Description:
  * @Copyright (c) - <richenlin(at)gmail.com>
  */
@@ -41,7 +41,7 @@ export async function GetCacheStore(app: Application): Promise<CacheStore> {
   if (Helper.isEmpty(opt)) {
     logger.Warn(`Missing CacheStore server configuration. Please write a configuration item with the key name 'CacheStore' in the db.ts file.`);
   }
-  storeCache.store = new CacheStore(opt);
+  storeCache.store = CacheStore.getInstance(opt);
   if (!Helper.isFunction(storeCache.store.getConnection)) {
     throw Error(`CacheStore connection failed. `);
   }
