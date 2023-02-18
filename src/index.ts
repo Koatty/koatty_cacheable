@@ -1,11 +1,11 @@
 /*
  * @Author: richen
  * @Date: 2020-07-06 19:53:43
- * @LastEditTime: 2023-01-13 14:16:02
+ * @LastEditTime: 2023-02-18 16:13:20
  * @Description:
  * @Copyright (c) - <richenlin(at)gmail.com>
  */
-import * as helper from "koatty_lib";
+import { Helper } from "koatty_lib";
 import { DefaultLogger as logger } from "koatty_logger";
 import { CacheStore, Store, StoreOptions } from "koatty_store";
 import { Application, IOCContainer } from 'koatty_container';
@@ -18,6 +18,8 @@ import { Application, IOCContainer } from 'koatty_container';
 interface CacheStoreInterface {
   store?: CacheStore;
 }
+
+const PreKey = "k";
 
 // cacheStore
 const cacheStore: CacheStoreInterface = {
@@ -36,11 +38,11 @@ export async function GetCacheStore(app: Application): Promise<CacheStore> {
     return cacheStore.store;
   }
   const opt: StoreOptions = app.config("CacheStore", "db") ?? {};
-  if (helper.isEmpty(opt)) {
+  if (Helper.isEmpty(opt)) {
     logger.Warn(`Missing CacheStore server configuration. Please write a configuration item with the key name 'CacheStore' in the db.ts file.`);
   }
   cacheStore.store = Store.getInstance(opt);
-  if (!helper.isFunction(cacheStore.store.getConnection)) {
+  if (!Helper.isFunction(cacheStore.store.getConnection)) {
     throw Error(`CacheStore connection failed. `);
   }
   return cacheStore.store;
@@ -58,23 +60,34 @@ async function InitCacheStore() {
 }
 
 /**
+ * @description: 
+ * @return {*}
+ */
+export interface CacheAbleOpt {
+  props?: any[];
+  timeout?: number;
+}
+
+/**
  * Decorate this method to support caching. Redis server config from db.ts.
  * The cache method returns a value to ensure that the next time the method is executed with the same parameters,
  * the results can be obtained directly from the cache without the need to execute the method again.
  *
  * @export
  * @param {string} cacheName cache name
- * @param {number} [timeout=3600] cache timeout
+ * @param {CacheAbleOpt} [opt] cache options
  * @returns {MethodDecorator}
  */
-export function CacheAble(cacheName: string, timeout = 3600): MethodDecorator {
+export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
+  props: [],
+  timeout: 3600,
+}): MethodDecorator {
   return (target: any, methodName: string, descriptor: PropertyDescriptor) => {
     const componentType = IOCContainer.getType(target);
     if (componentType !== "SERVICE" && componentType !== "COMPONENT") {
       throw Error("This decorator only used in the service、component class.");
     }
-    let identifier = IOCContainer.getIdentifier(target);
-    identifier = identifier || (target.constructor ? (target.constructor.name || "") : "");
+
     const { value, configurable, enumerable } = descriptor;
     descriptor = {
       configurable,
@@ -89,26 +102,35 @@ export function CacheAble(cacheName: string, timeout = 3600): MethodDecorator {
         });
         if (cacheFlag) {
           // tslint:disable-next-line: one-variable-per-declaration
-          let key = "", res;
+          let key = PreKey;
           if (props && props.length > 0) {
-            key = `${identifier}:${methodName}:${helper.murmurHash(JSON.stringify(props))}`;
-          } else {
-            key = `${identifier}:${methodName}`;
+            if (opt.props && opt.props.length > 0) {
+              for (const item of opt.props) {
+                if (props[item] !== undefined) {
+                  const value = Helper.toString(props[item]);
+                  key += `:${value}`;
+                }
+              }
+              // 防止key超长
+              if (key.length > 32) {
+                key = Helper.murmurHash(key);
+              }
+            }
           }
 
-          res = await store.hget(cacheName, key).catch((): any => null);
-          if (!helper.isEmpty(res)) {
+          let res = await store.get(`${cacheName}:${key}`).catch((): any => null);
+          if (!Helper.isEmpty(res)) {
             return JSON.parse(res);
           }
           // tslint:disable-next-line: no-invalid-this
           res = await value.apply(this, props);
           // prevent cache penetration
-          if (helper.isEmpty(res)) {
+          if (Helper.isEmpty(res)) {
             res = "";
-            timeout = 60;
+            opt.timeout = 5;
           }
           // async set store
-          store.hset(cacheName, key, JSON.stringify(res), timeout).catch((): any => null);
+          store.set(`${cacheName}:${key}`, JSON.stringify(res), opt.timeout).catch((): any => null);
           return res;
         } else {
           // tslint:disable-next-line: no-invalid-this
@@ -128,20 +150,30 @@ export function CacheAble(cacheName: string, timeout = 3600): MethodDecorator {
 export type eventTimes = "Before" | "After";
 
 /**
+ * @description: 
+ * @return {*}
+ */
+export interface CacheEvictOpt {
+  props?: any[];
+  eventTime?: "Before";
+}
+
+/**
  * Decorating the execution of this method will trigger a cache clear operation. Redis server config from db.ts.
  *
  * @export
  * @param {string} cacheName cacheName cache name
- * @param {eventTimes} [eventTime="Before"]
+ * @param {CacheEvictOpt} [opt] cache options
  * @returns
  */
-export function CacheEvict(cacheName: string, eventTime: eventTimes = "Before") {
+export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
+  eventTime: "Before",
+}) {
   return (target: any, methodName: string, descriptor: PropertyDescriptor) => {
     const componentType = IOCContainer.getType(target);
     if (componentType !== "SERVICE" && componentType !== "COMPONENT") {
       throw Error("This decorator only used in the service、component class.");
     }
-    const identifier = IOCContainer.getIdentifier(target);
     const { value, configurable, enumerable } = descriptor;
     descriptor = {
       configurable,
@@ -156,14 +188,30 @@ export function CacheEvict(cacheName: string, eventTime: eventTimes = "Before") 
         });
 
         if (cacheFlag) {
-          if (eventTime === "Before") {
-            await store.del(cacheName).catch((): any => null);
+          let key = PreKey;
+          if (props && props.length > 0) {
+            if (opt.props && opt.props.length > 0) {
+              for (const item of opt.props) {
+                if (props[item] !== undefined) {
+                  const value = Helper.toString(props[item]);
+                  key += `:${value}`;
+                }
+              }
+              // 防止key超长
+              if (key.length > 32) {
+                key = Helper.murmurHash(key);
+              }
+            }
+          }
+
+          if (opt.eventTime === "Before") {
+            await store.del(`${cacheName}:${key}`).catch((): any => null);
             // tslint:disable-next-line: no-invalid-this
             return value.apply(this, props);
           } else {
             // tslint:disable-next-line: no-invalid-this
             const res = await value.apply(this, props);
-            store.del(cacheName).catch((): any => null);
+            store.del(`${cacheName}:${key}`).catch((): any => null);
             return res;
           }
         } else {
