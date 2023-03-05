@@ -1,7 +1,7 @@
 /*
  * @Author: richen
  * @Date: 2020-07-06 19:53:43
- * @LastEditTime: 2023-02-19 01:16:52
+ * @LastEditTime: 2023-03-05 11:02:53
  * @Description:
  * @Copyright (c) - <richenlin(at)gmail.com>
  */
@@ -37,7 +37,7 @@ export async function GetCacheStore(app: Application): Promise<CacheStore> {
   if (storeCache.store && storeCache.store.getConnection) {
     return storeCache.store;
   }
-  const opt: StoreOptions = app.config("CacheStore", "db") ?? {};
+  const opt: StoreOptions = app.config("CacheStore") ?? app.config("CacheStore", "db") ?? {};
   if (Helper.isEmpty(opt)) {
     logger.Warn(`Missing CacheStore server configuration. Please write a configuration item with the key name 'CacheStore' in the db.ts file.`);
   }
@@ -55,7 +55,7 @@ export async function GetCacheStore(app: Application): Promise<CacheStore> {
  */
 async function InitCacheStore() {
   const app = IOCContainer.getApp();
-  app && app.once("appStart", async function () {
+  app && app.once("appReady", async function () {
     await GetCacheStore(app);
   })
 }
