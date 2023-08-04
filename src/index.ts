@@ -1,7 +1,7 @@
 /*
  * @Author: richen
  * @Date: 2020-07-06 19:53:43
- * @LastEditTime: 2023-03-05 11:02:53
+ * @LastEditTime: 2023-08-04 14:33:58
  * @Description:
  * @Copyright (c) - <richenlin(at)gmail.com>
  */
@@ -54,6 +54,9 @@ export async function GetCacheStore(app: Application): Promise<CacheStore> {
  *
  */
 async function InitCacheStore() {
+  if (storeCache.store !== null) {
+    return;
+  }
   const app = IOCContainer.getApp();
   app && app.once("appReady", async function () {
     await GetCacheStore(app);
@@ -96,6 +99,12 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
     }
 
     const { value, configurable, enumerable } = descriptor;
+    opt = {
+      ...{
+        params: [],
+        timeout: 3600,
+      }, ...opt
+    }
     // 获取定义的参数位置
     const paramIndexes = getParamIndex(opt.params, getArgs(value));
     descriptor = {
@@ -192,6 +201,11 @@ export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
     }
     const { value, configurable, enumerable } = descriptor;
     // 获取定义的参数位置
+    opt = {
+      ...{
+        eventTime: "Before",
+      }, ...opt
+    }
     const paramIndexes = getParamIndex(opt.params, getArgs(value));
     descriptor = {
       configurable,
