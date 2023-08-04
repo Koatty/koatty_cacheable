@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.1](https://github.com/thinkkoa/koatty_cacheable/compare/v1.4.0...v1.4.1) (2023-08-04)
+
+
+### Bug Fixes
+
+* default value ([38f2e57](https://github.com/thinkkoa/koatty_cacheable/commit/38f2e57d52d13482907ca9eac6006d1e841bdadd))
+* 初始化缓存改为appReady执行 ([7e9b1ab](https://github.com/thinkkoa/koatty_cacheable/commit/7e9b1abe6acdbdf1b6ad34efa053cbaca1e7b6d7))
+
 ## [1.4.0](https://github.com/thinkkoa/koatty_cacheable/compare/v1.3.8...v1.4.0) (2023-02-18)
 
 

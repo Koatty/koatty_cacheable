@@ -1,6 +1,6 @@
 {
   "name": "koatty_cacheable",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Cacheable for koatty.",
   "scripts": {
     "build": "npm run build:js && npm run build:dts && npm run build:doc && npm run build:cp",
