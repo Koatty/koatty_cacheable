@@ -7,7 +7,7 @@
 Decorating the execution of this method will trigger a cache clear operation. Redis server config from db.ts.
 
 
-<b>Signature:</b>
+**Signature:**
 
 ```typescript
 export declare function CacheEvict(cacheName: string, opt?: CacheEvictOpt): (target: any, methodName: string, descriptor: PropertyDescriptor) => PropertyDescriptor;
@@ -18,9 +18,9 @@ export declare function CacheEvict(cacheName: string, opt?: CacheEvictOpt): (tar
 |  Parameter | Type | Description |
 |  --- | --- | --- |
 |  cacheName | string | cacheName cache name |
-|  opt | [CacheEvictOpt](./koatty_cacheable.cacheevictopt.md) | <i>(Optional)</i> cache options e.g: { params: \["id"\], eventTime: "Before" } Use the 'id' parameters of the method as cache subkeys, and clear the cache before the method executed |
+|  opt | [CacheEvictOpt](./koatty_cacheable.cacheevictopt.md) | _(Optional)_ cache options e.g: { params: \["id"\], eventTime: "Before" } Use the 'id' parameters of the method as cache subkeys, and clear the cache before the method executed |
 
-<b>Returns:</b>
+**Returns:**
 
 (target: any, methodName: string, descriptor: PropertyDescriptor) =&gt; PropertyDescriptor
 

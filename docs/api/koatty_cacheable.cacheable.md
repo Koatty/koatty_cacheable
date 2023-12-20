@@ -7,7 +7,7 @@
 Decorate this method to support caching. Redis server config from db.ts. The cache method returns a value to ensure that the next time the method is executed with the same parameters, the results can be obtained directly from the cache without the need to execute the method again.
 
 
-<b>Signature:</b>
+**Signature:**
 
 ```typescript
 export declare function CacheAble(cacheName: string, opt?: CacheAbleOpt): MethodDecorator;
@@ -18,9 +18,9 @@ export declare function CacheAble(cacheName: string, opt?: CacheAbleOpt): Method
 |  Parameter | Type | Description |
 |  --- | --- | --- |
 |  cacheName | string | cache name |
-|  opt | [CacheAbleOpt](./koatty_cacheable.cacheableopt.md) | <i>(Optional)</i> cache options e.g: { params: \["id"\], timeout: 30 } Use the 'id' parameters of the method as cache subkeys, the cache expiration time 30s |
+|  opt | [CacheAbleOpt](./koatty_cacheable.cacheableopt.md) | _(Optional)_ cache options e.g: { params: \["id"\], timeout: 30 } Use the 'id' parameters of the method as cache subkeys, the cache expiration time 30s |
 
-<b>Returns:</b>
+**Returns:**
 
 MethodDecorator
 

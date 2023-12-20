@@ -6,7 +6,7 @@
 
 @<!-- -->description:  {<!-- -->\*<!-- -->}
 
-<b>Signature:</b>
+**Signature:**
 
 ```typescript
 export interface CacheEvictOpt 
@@ -14,8 +14,8 @@ export interface CacheEvictOpt
 
 ## Properties
 
-|  Property | Type | Description |
-|  --- | --- | --- |
-|  [eventTime?](./koatty_cacheable.cacheevictopt.eventtime.md) | "Before" | <i>(Optional)</i> |
-|  [params?](./koatty_cacheable.cacheevictopt.params.md) | string\[\] | <i>(Optional)</i> |
+|  Property | Modifiers | Type | Description |
+|  --- | --- | --- | --- |
+|  [eventTime?](./koatty_cacheable.cacheevictopt.eventtime.md) |  | "Before" | _(Optional)_ |
+|  [params?](./koatty_cacheable.cacheevictopt.params.md) |  | string\[\] | _(Optional)_ |
 

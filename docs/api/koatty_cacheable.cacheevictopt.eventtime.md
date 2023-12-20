@@ -4,7 +4,7 @@
 
 ## CacheEvictOpt.eventTime property
 
-<b>Signature:</b>
+**Signature:**
 
 ```typescript
 eventTime?: "Before";

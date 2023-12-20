@@ -4,8 +4,8 @@
 
 ## eventTimes type
 
-<b>Signature:</b>
+**Signature:**
 
 ```typescript
-export declare type eventTimes = "Before" | "After";
+export type eventTimes = "Before" | "After";
 ```

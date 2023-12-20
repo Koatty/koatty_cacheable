@@ -7,7 +7,7 @@
 get instances of storeCache
 
 
-<b>Signature:</b>
+**Signature:**
 
 ```typescript
 export declare function GetCacheStore(app: Application): Promise<CacheStore>;
@@ -19,7 +19,7 @@ export declare function GetCacheStore(app: Application): Promise<CacheStore>;
 |  --- | --- | --- |
 |  app | Application |  |
 
-<b>Returns:</b>
+**Returns:**
 
 Promise&lt;CacheStore&gt;
 

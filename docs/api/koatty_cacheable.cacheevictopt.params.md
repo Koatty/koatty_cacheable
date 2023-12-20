@@ -4,7 +4,7 @@
 
 ## CacheEvictOpt.params property
 
-<b>Signature:</b>
+**Signature:**
 
 ```typescript
 params?: string[];

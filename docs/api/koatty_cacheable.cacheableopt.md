@@ -6,7 +6,7 @@
 
 @<!-- -->description:  {<!-- -->\*<!-- -->}
 
-<b>Signature:</b>
+**Signature:**
 
 ```typescript
 export interface CacheAbleOpt 
@@ -14,8 +14,8 @@ export interface CacheAbleOpt
 
 ## Properties
 
-|  Property | Type | Description |
-|  --- | --- | --- |
-|  [params?](./koatty_cacheable.cacheableopt.params.md) | string\[\] | <i>(Optional)</i> |
-|  [timeout?](./koatty_cacheable.cacheableopt.timeout.md) | number | <i>(Optional)</i> |
+|  Property | Modifiers | Type | Description |
+|  --- | --- | --- | --- |
+|  [params?](./koatty_cacheable.cacheableopt.params.md) |  | string\[\] | _(Optional)_ |
+|  [timeout?](./koatty_cacheable.cacheableopt.timeout.md) |  | number | _(Optional)_ |
 
