@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.3](https://github.com/thinkkoa/koatty_cacheable/compare/v1.4.2...v1.4.3) (2024-01-17)
+
+
+### Bug Fixes
+
+* 缓存key拼装 ([5d0b924](https://github.com/thinkkoa/koatty_cacheable/commit/5d0b9248064d353046bd7287d3a3ee5229e88c23))
+
 ### [1.4.2](https://github.com/thinkkoa/koatty_cacheable/compare/v1.4.1...v1.4.2) (2023-12-20)
 
 ### [1.4.1](https://github.com/thinkkoa/koatty_cacheable/compare/v1.4.0...v1.4.1) (2023-08-04)
