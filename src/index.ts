@@ -1,7 +1,7 @@
 /*
  * @Author: richen
  * @Date: 2020-07-06 19:53:43
- * @LastEditTime: 2023-08-04 14:33:58
+ * @LastEditTime: 2024-01-17 21:54:53
  * @Description:
  * @Copyright (c) - <richenlin(at)gmail.com>
  */
@@ -10,6 +10,7 @@ import { DefaultLogger as logger } from "koatty_logger";
 import { CacheStore, StoreOptions } from "koatty_store";
 import { Application, IOCContainer } from 'koatty_container';
 
+const longKey = 128;
 /**
  * 
  *
@@ -18,8 +19,6 @@ import { Application, IOCContainer } from 'koatty_container';
 interface CacheStoreInterface {
   store?: CacheStore;
 }
-
-const PreKey = "k";
 
 // storeCache
 const storeCache: CacheStoreInterface = {
@@ -90,7 +89,7 @@ export interface CacheAbleOpt {
  */
 export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
   params: [],
-  timeout: 3600,
+  timeout: 300,
 }): MethodDecorator {
   return (target: any, methodName: string, descriptor: PropertyDescriptor) => {
     const componentType = IOCContainer.getType(target);
@@ -102,11 +101,11 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
     opt = {
       ...{
         params: [],
-        timeout: 3600,
+        timeout: 300,
       }, ...opt
     }
     // 获取定义的参数位置
-    const paramIndexes = getParamIndex(opt.params, getArgs(value));
+    const paramIndexes = getParamIndex(opt.params);
     descriptor = {
       configurable,
       enumerable,
@@ -120,36 +119,32 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
         });
         if (cacheFlag) {
           // tslint:disable-next-line: one-variable-per-declaration
-          let key = PreKey;
+          let key = cacheName;
           if (props && props.length > 0) {
             for (const item of paramIndexes) {
               if (props[item] !== undefined) {
                 const value = Helper.toString(props[item]);
-                key += `:${value}`;
+                key += `:${opt.params[item]}:${value}`;
               }
             }
             // 防止key超长
-            if (key.length > 32) {
+            if (key.length > longKey) {
               key = Helper.murmurHash(key);
             }
           }
 
-          let res = await store.get(`${cacheName}:${key}`).catch((): any => null);
+          let res = await store.get(key).catch((): any => null);
           if (!Helper.isEmpty(res)) {
             return JSON.parse(res);
           }
           // tslint:disable-next-line: no-invalid-this
           res = await value.apply(this, props);
           // prevent cache penetration
-          if (Helper.isEmpty(res)) {
+          if (Helper.isTrueEmpty(res)) {
             res = "";
-            opt.timeout = 5;
-          }
-          if (!opt.timeout) {
-            opt.timeout = 3600;
           }
           // async set store
-          store.set(`${cacheName}:${key}`, JSON.stringify(res), opt.timeout).catch((): any => null);
+          store.set(key, JSON.stringify(res), opt.timeout).catch((): any => null);
           return res;
         } else {
           // tslint:disable-next-line: no-invalid-this
@@ -206,7 +201,7 @@ export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
         eventTime: "Before",
       }, ...opt
     }
-    const paramIndexes = getParamIndex(opt.params, getArgs(value));
+    const paramIndexes = getParamIndex(opt.params);
     descriptor = {
       configurable,
       enumerable,
@@ -220,28 +215,28 @@ export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
         });
 
         if (cacheFlag) {
-          let key = PreKey;
+          let key = cacheName;
           if (props && props.length > 0) {
             for (const item of paramIndexes) {
               if (props[item] !== undefined) {
                 const value = Helper.toString(props[item]);
-                key += `:${value}`;
+                key += `:${opt.params[item]}:${value}`;
               }
             }
             // 防止key超长
-            if (key.length > 32) {
+            if (key.length > longKey) {
               key = Helper.murmurHash(key);
             }
           }
 
           if (opt.eventTime === "Before") {
-            await store.del(`${cacheName}:${key}`).catch((): any => null);
+            await store.del(key).catch((): any => null);
             // tslint:disable-next-line: no-invalid-this
             return value.apply(this, props);
           } else {
             // tslint:disable-next-line: no-invalid-this
             const res = await value.apply(this, props);
-            store.del(`${cacheName}:${key}`).catch((): any => null);
+            store.del(key).catch((): any => null);
             return res;
           }
         } else {
@@ -279,11 +274,10 @@ function getArgs(func: Function) {
 
 /**
  * @description: 
- * @param {string} params
- * @param {string} args
+ * @param {string[]} params
  * @return {*}
  */
-function getParamIndex(params: string[], args: string[]): number[] {
+function getParamIndex(params: string[]): number[] {
   const res = [];
   for (let i = 0; i < params.length; i++) {
     if (params.includes(params[i])) {
