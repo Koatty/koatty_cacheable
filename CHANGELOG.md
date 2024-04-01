@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.0](https://github.com/thinkkoa/koatty_cacheable/compare/v1.4.3...v1.5.0) (2024-04-01)
+
+
+### Features
+
+* delayedDoubleDeletion ([532f735](https://github.com/thinkkoa/koatty_cacheable/commit/532f735818fc66fa144023cd24282efe350833ba))
+
 ### [1.4.3](https://github.com/thinkkoa/koatty_cacheable/compare/v1.4.2...v1.4.3) (2024-01-17)
 
 
