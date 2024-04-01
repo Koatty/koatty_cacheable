@@ -4,7 +4,7 @@
 
 ## CacheAble() function
 
-Decorate this method to support caching. Redis server config from db.ts. The cache method returns a value to ensure that the next time the method is executed with the same parameters, the results can be obtained directly from the cache without the need to execute the method again.
+Decorate this method to support caching. The cache method returns a value to ensure that the next time the method is executed with the same parameters, the results can be obtained directly from the cache without the need to execute the method again. CacheStore server config defined in db.ts.
 
 
 **Signature:**

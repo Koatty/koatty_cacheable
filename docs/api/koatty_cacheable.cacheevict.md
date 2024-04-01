@@ -4,7 +4,7 @@
 
 ## CacheEvict() function
 
-Decorating the execution of this method will trigger a cache clear operation. Redis server config from db.ts.
+Decorating the execution of this method will trigger a cache clear operation. CacheStore server config defined in db.ts.
 
 
 **Signature:**
@@ -18,7 +18,7 @@ export declare function CacheEvict(cacheName: string, opt?: CacheEvictOpt): (tar
 |  Parameter | Type | Description |
 |  --- | --- | --- |
 |  cacheName | string | cacheName cache name |
-|  opt | [CacheEvictOpt](./koatty_cacheable.cacheevictopt.md) | _(Optional)_ cache options e.g: { params: \["id"\], eventTime: "Before" } Use the 'id' parameters of the method as cache subkeys, and clear the cache before the method executed |
+|  opt | [CacheEvictOpt](./koatty_cacheable.cacheevictopt.md) | _(Optional)_ cache options e.g: { params: \["id"\], delayedDoubleDeletion: true } Use the 'id' parameters of the method as cache subkeys, and clear the cache after the method executed |
 
 **Returns:**
 

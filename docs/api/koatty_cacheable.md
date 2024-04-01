@@ -8,8 +8,8 @@
 
 |  Function | Description |
 |  --- | --- |
-|  [CacheAble(cacheName, opt)](./koatty_cacheable.cacheable.md) | <p>Decorate this method to support caching. Redis server config from db.ts. The cache method returns a value to ensure that the next time the method is executed with the same parameters, the results can be obtained directly from the cache without the need to execute the method again.</p> |
-|  [CacheEvict(cacheName, opt)](./koatty_cacheable.cacheevict.md) | <p>Decorating the execution of this method will trigger a cache clear operation. Redis server config from db.ts.</p> |
+|  [CacheAble(cacheName, opt)](./koatty_cacheable.cacheable.md) | <p>Decorate this method to support caching. The cache method returns a value to ensure that the next time the method is executed with the same parameters, the results can be obtained directly from the cache without the need to execute the method again. CacheStore server config defined in db.ts.</p> |
+|  [CacheEvict(cacheName, opt)](./koatty_cacheable.cacheevict.md) | <p>Decorating the execution of this method will trigger a cache clear operation. CacheStore server config defined in db.ts.</p> |
 |  [GetCacheStore(app)](./koatty_cacheable.getcachestore.md) | <p>get instances of storeCache</p> |
 
 ## Interfaces
@@ -18,10 +18,4 @@
 |  --- | --- |
 |  [CacheAbleOpt](./koatty_cacheable.cacheableopt.md) | @<!-- -->description:  {<!-- -->\*<!-- -->} |
 |  [CacheEvictOpt](./koatty_cacheable.cacheevictopt.md) | @<!-- -->description:  {<!-- -->\*<!-- -->} |
-
-## Type Aliases
-
-|  Type Alias | Description |
-|  --- | --- |
-|  [eventTimes](./koatty_cacheable.eventtimes.md) |  |
 
