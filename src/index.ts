@@ -1,7 +1,7 @@
 /*
  * @Author: richen
  * @Date: 2020-07-06 19:53:43
- * @LastEditTime: 2024-01-17 21:54:53
+ * @LastEditTime: 2024-04-01 15:44:15
  * @Description:
  * @Copyright (c) - <richenlin(at)gmail.com>
  */
@@ -72,10 +72,12 @@ export interface CacheAbleOpt {
 }
 
 /**
- * Decorate this method to support caching. Redis server config from db.ts.
- * The cache method returns a value to ensure that the next time the method is executed with the same parameters,
- * the results can be obtained directly from the cache without the need to execute the method again.
- *
+ * Decorate this method to support caching. 
+ * The cache method returns a value to ensure that the next time 
+ * the method is executed with the same parameters, the results can be obtained
+ * directly from the cache without the need to execute the method again.
+ * CacheStore server config defined in db.ts.
+ * 
  * @export
  * @param {string} cacheName cache name
  * @param {CacheAbleOpt} [opt] cache options
@@ -159,21 +161,17 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
 }
 
 /**
- * 
- */
-export type eventTimes = "Before" | "After";
-
-/**
  * @description: 
  * @return {*}
  */
 export interface CacheEvictOpt {
   params?: string[];
-  eventTime?: "Before";
+  delayedDoubleDeletion?: boolean;
 }
 
 /**
- * Decorating the execution of this method will trigger a cache clear operation. Redis server config from db.ts.
+ * Decorating the execution of this method will trigger a cache clear operation. 
+ * CacheStore server config defined in db.ts.
  *
  * @export
  * @param {string} cacheName cacheName cache name
@@ -181,13 +179,14 @@ export interface CacheEvictOpt {
  * e.g: 
  * {
  *  params: ["id"],
- *  eventTime: "Before"
+ *  delayedDoubleDeletion: true
  * }
- * Use the 'id' parameters of the method as cache subkeys, and clear the cache before the method executed
+ * Use the 'id' parameters of the method as cache subkeys,
+ *  and clear the cache after the method executed
  * @returns
  */
 export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
-  eventTime: "Before",
+  delayedDoubleDeletion: true,
 }) {
   return (target: any, methodName: string, descriptor: PropertyDescriptor) => {
     const componentType = IOCContainer.getType(target);
@@ -229,16 +228,15 @@ export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
             }
           }
 
-          if (opt.eventTime === "Before") {
-            await store.del(key).catch((): any => null);
-            // tslint:disable-next-line: no-invalid-this
-            return value.apply(this, props);
-          } else {
-            // tslint:disable-next-line: no-invalid-this
-            const res = await value.apply(this, props);
-            store.del(key).catch((): any => null);
-            return res;
+          // tslint:disable-next-line: no-invalid-this
+          const res = await value.apply(this, props);
+          store.del(key).catch((): any => null);
+          if (opt.delayedDoubleDeletion) {
+            asyncDelayedExecution(2000, () => {
+              store.del(key).catch((): any => null);
+            });
           }
+          return res;
         } else {
           // tslint:disable-next-line: no-invalid-this
           return value.apply(this, props);
@@ -285,4 +283,24 @@ function getParamIndex(params: string[]): number[] {
     }
   }
   return res;
+}
+
+/**
+ * 
+ * @param ms 
+ * @returns 
+ */
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * async delayed execution func
+ * @param ms 
+ * @param fn 
+ * @returns 
+ */
+async function asyncDelayedExecution(ms: number, fn: Function) {
+  await delay(ms); // delay ms second
+  return fn();
 }
