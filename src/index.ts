@@ -1,66 +1,17 @@
 /*
  * @Author: richen
  * @Date: 2020-07-06 19:53:43
- * @LastEditTime: 2024-04-01 15:44:15
+ * @LastEditTime: 2024-11-07 15:30:20
  * @Description:
  * @Copyright (c) - <richenlin(at)gmail.com>
  */
+import { IOCContainer } from 'koatty_container';
 import { Helper } from "koatty_lib";
 import { DefaultLogger as logger } from "koatty_logger";
-import { CacheStore, StoreOptions } from "koatty_store";
-import { Application, IOCContainer } from 'koatty_container';
+import { CacheStore } from "koatty_store";
+import { asyncDelayedExecution, getArgs, GetCacheStore, getParamIndex, InitCacheStore } from './utils';
 
 const longKey = 128;
-/**
- * 
- *
- * @interface CacheStoreInterface
- */
-interface CacheStoreInterface {
-  store?: CacheStore;
-}
-
-// storeCache
-const storeCache: CacheStoreInterface = {
-  store: null
-};
-
-/**
- * get instances of storeCache
- *
- * @export
- * @param {Application} app
- * @returns {*}  {CacheStore}
- */
-export async function GetCacheStore(app: Application): Promise<CacheStore> {
-  if (storeCache.store && storeCache.store.getConnection) {
-    return storeCache.store;
-  }
-  const opt: StoreOptions = app.config("CacheStore") ?? app.config("CacheStore", "db") ?? {};
-  if (Helper.isEmpty(opt)) {
-    logger.Warn(`Missing CacheStore server configuration. Please write a configuration item with the key name 'CacheStore' in the db.ts file.`);
-  }
-  storeCache.store = CacheStore.getInstance(opt);
-  if (!Helper.isFunction(storeCache.store.getConnection)) {
-    throw Error(`CacheStore connection failed. `);
-  }
-  await storeCache.store.client.getConnection();
-  return storeCache.store;
-}
-
-/**
- * initiation CacheStore connection and client.
- *
- */
-async function InitCacheStore() {
-  if (storeCache.store !== null) {
-    return;
-  }
-  const app = IOCContainer.getApp();
-  app && app.once("appReady", async function () {
-    await GetCacheStore(app);
-  })
-}
 
 /**
  * @description: 
@@ -69,6 +20,15 @@ async function InitCacheStore() {
 export interface CacheAbleOpt {
   params?: string[];
   timeout?: number;
+}
+
+/**
+ * @description: 
+ * @return {*}
+ */
+export interface CacheEvictOpt {
+  params?: string[];
+  delayedDoubleDeletion?: boolean;
 }
 
 /**
@@ -95,59 +55,47 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
 }): MethodDecorator {
   return (target: any, methodName: string, descriptor: PropertyDescriptor) => {
     const componentType = IOCContainer.getType(target);
-    if (componentType !== "SERVICE" && componentType !== "COMPONENT") {
+    if (!["SERVICE", "COMPONENT"].includes(componentType)) {
       throw Error("This decorator only used in the service、component class.");
     }
 
     const { value, configurable, enumerable } = descriptor;
-    opt = {
-      ...{
-        params: [],
-        timeout: 300,
-      }, ...opt
-    }
-    // 获取定义的参数位置
-    const paramIndexes = getParamIndex(opt.params);
+    const mergedOpt = { ...{ params: [], timeout: 300 }, ...opt };
+
+    // Get the parameter list of the method
+    const funcParams = getArgs((<any>target)[methodName]);
+    // Get the defined parameter location
+    const paramIndexes = getParamIndex(funcParams, opt.params);
     descriptor = {
       configurable,
       enumerable,
       writable: true,
       async value(...props: any[]) {
-        let cacheFlag = true;
-        const store: CacheStore = await GetCacheStore(this.app).catch(() => {
-          cacheFlag = false;
-          logger.Error("Get cache store instance failed.");
+        const store: CacheStore = await GetCacheStore(this.app).catch((e): any => {
+          logger.Error("Get cache store instance failed." + e.message);
           return null;
         });
-        if (cacheFlag) {
-          // tslint:disable-next-line: one-variable-per-declaration
+        if (store) {
           let key = cacheName;
-          if (props && props.length > 0) {
-            for (const item of paramIndexes) {
-              if (props[item] !== undefined) {
-                const value = Helper.toString(props[item]);
-                key += `:${opt.params[item]}:${value}`;
-              }
-            }
-            // 防止key超长
-            if (key.length > longKey) {
-              key = Helper.murmurHash(key);
+          for (const item of paramIndexes) {
+            if (props[item] !== undefined) {
+              key += `:${mergedOpt.params[item]}:${Helper.toString(props[item])}`;
             }
           }
-
-          let res = await store.get(key).catch((): any => null);
+          key = key.length > longKey ? Helper.murmurHash(key) : key;
+          const res = await store.get(key).catch((e): any => {
+            logger.error("Cache get error:" + e.message)
+          });
           if (!Helper.isEmpty(res)) {
             return JSON.parse(res);
           }
-          // tslint:disable-next-line: no-invalid-this
-          res = await value.apply(this, props);
-          // prevent cache penetration
-          if (Helper.isTrueEmpty(res)) {
-            res = "";
-          }
-          // async set store
-          store.set(key, JSON.stringify(res), opt.timeout).catch((): any => null);
-          return res;
+          const result = await value.apply(this, props);
+          // async refresh store
+          store.set(key, Helper.isJSONObj(result) ? JSON.stringify(result) : result,
+            mergedOpt.timeout).catch((e): any => {
+              logger.error("Cache set error:" + e.message)
+            });
+          return result;
         } else {
           // tslint:disable-next-line: no-invalid-this
           return value.apply(this, props);
@@ -158,15 +106,6 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
     InitCacheStore();
     return descriptor;
   };
-}
-
-/**
- * @description: 
- * @return {*}
- */
-export interface CacheEvictOpt {
-  params?: string[];
-  delayedDoubleDeletion?: boolean;
 }
 
 /**
@@ -190,117 +129,55 @@ export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
 }) {
   return (target: any, methodName: string, descriptor: PropertyDescriptor) => {
     const componentType = IOCContainer.getType(target);
-    if (componentType !== "SERVICE" && componentType !== "COMPONENT") {
+    if (!["SERVICE", "COMPONENT"].includes(componentType)) {
       throw Error("This decorator only used in the service、component class.");
     }
     const { value, configurable, enumerable } = descriptor;
-    // 获取定义的参数位置
-    opt = {
-      ...{
-        eventTime: "Before",
-      }, ...opt
-    }
-    const paramIndexes = getParamIndex(opt.params);
+    opt = { ...{ eventTime: "Before", }, ...opt }
+    // Get the parameter list of the method
+    const funcParams = getArgs((<any>target)[methodName]);
+    // Get the defined parameter location
+    const paramIndexes = getParamIndex(funcParams, opt.params);
+
     descriptor = {
       configurable,
       enumerable,
       writable: true,
       async value(...props: any[]) {
-        let cacheFlag = true;
-        const store: CacheStore = await GetCacheStore(this.app).catch(() => {
-          cacheFlag = false;
-          logger.Error("Get cache store instance failed.");
+        const store: CacheStore = await GetCacheStore(this.app).catch((e): any => {
+          logger.Error("Get cache store instance failed." + e.message);
           return null;
         });
 
-        if (cacheFlag) {
+        if (store) {
           let key = cacheName;
-          if (props && props.length > 0) {
-            for (const item of paramIndexes) {
-              if (props[item] !== undefined) {
-                const value = Helper.toString(props[item]);
-                key += `:${opt.params[item]}:${value}`;
-              }
-            }
-            // 防止key超长
-            if (key.length > longKey) {
-              key = Helper.murmurHash(key);
+          for (const item of paramIndexes) {
+            if (props[item] !== undefined) {
+              key += `:${opt.params[item]}:${Helper.toString(props[item])}`;
             }
           }
+          key = key.length > longKey ? Helper.murmurHash(key) : key;
+          const result = await value.apply(this, props);
+          store.del(key).catch((e): any => {
+            logger.Error("Cache delete error:" + e.message);
+          });
 
-          // tslint:disable-next-line: no-invalid-this
-          const res = await value.apply(this, props);
-          store.del(key).catch((): any => null);
           if (opt.delayedDoubleDeletion) {
-            asyncDelayedExecution(2000, () => {
-              store.del(key).catch((): any => null);
-            });
+            asyncDelayedExecution(() => {
+              store.del(key).catch((e): any => {
+                logger.error("Cache double delete error:" + e.message);
+              });
+            }, 2000);
+            return result;
+          } else {
+            // tslint:disable-next-line: no-invalid-this
+            return value.apply(this, props);
           }
-          return res;
-        } else {
-          // tslint:disable-next-line: no-invalid-this
-          return value.apply(this, props);
         }
       }
     };
     // bind app_ready hook event 
     InitCacheStore();
     return descriptor;
-  };
-}
-
-/**
- * @description: 
- * @param {*} func
- * @return {*}
- */
-function getArgs(func: Function) {
-  // 首先匹配函数括弧里的参数
-  const args = func.toString().match(/.*?\(([^)]*)\)/);
-  if (args.length > 1) {
-    // 分解参数成数组
-    return args[1].split(",").map(function (a) {
-      // 去空格和内联注释
-      return a.replace(/\/\*.*\*\//, "").trim();
-    }).filter(function (ae) {
-      // 确保没有undefineds
-      return ae;
-    });
   }
-  return [];
-}
-
-/**
- * @description: 
- * @param {string[]} params
- * @return {*}
- */
-function getParamIndex(params: string[]): number[] {
-  const res = [];
-  for (let i = 0; i < params.length; i++) {
-    if (params.includes(params[i])) {
-      res.push(i);
-    }
-  }
-  return res;
-}
-
-/**
- * 
- * @param ms 
- * @returns 
- */
-function delay(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-/**
- * async delayed execution func
- * @param ms 
- * @param fn 
- * @returns 
- */
-async function asyncDelayedExecution(ms: number, fn: Function) {
-  await delay(ms); // delay ms second
-  return fn();
 }
