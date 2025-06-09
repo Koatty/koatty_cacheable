@@ -9,120 +9,81 @@
  * @Copyright (c): <richenlin(at)gmail.com>
  */
 
-import { Application, IOCContainer } from "koatty_container";
 import { Helper } from "koatty_lib";
-import { DefaultLogger as logger } from "koatty_logger";
-import { CacheStore, StoreOptions } from "koatty_store";
 
 /**
- * 
- *
- * @interface CacheStoreInterface
+ * Extract parameter names from function signature
+ * @param func The function to extract parameters from
+ * @returns Array of parameter names
  */
-interface CacheStoreInterface {
-  store?: CacheStore;
-}
-
-// storeCache
-const storeCache: CacheStoreInterface = {
-  store: null
-};
-
-/**
- * get instances of storeCache
- *
- * @export
- * @param {Application} app
- * @returns {*}  {CacheStore}
- */
-export async function GetCacheStore(app?: Application): Promise<CacheStore> {
-  if (storeCache.store && storeCache.store.getConnection) {
-    return storeCache.store;
-  }
-  let opt: StoreOptions = {
-    type: "memory",
-    db: 0,
-    timeout: 30
-  };
-  if (app && Helper.isFunction(app.config)) {
-    opt = app.config("CacheStore") || app.config("CacheStore", "db");
-    if (Helper.isEmpty(opt)) {
-      logger.Warn(`Missing CacheStore server configuration. Please write a configuration item with the key name 'CacheStore' in the db.ts file.`);
+export function getArgs(func: (...args: any[]) => any): string[] {
+  try {
+    // Match function parameters in parentheses
+    const args = func.toString().match(/.*?\(([^)]*)\)/);
+    if (args && args.length > 1) {
+      // Split parameters into array and clean them
+      return args[1].split(",").map(function (a) {
+        // Remove inline comments and whitespace
+        return a.replace(/\/\*.*\*\//, "").trim();
+      }).filter(function (ae) {
+        // Filter out empty strings
+        return ae;
+      });
     }
+    return [];
+  } catch (error) {
+    // Return empty array if parsing fails
+    return [];
   }
-
-  storeCache.store = CacheStore.getInstance(opt);
-  if (!Helper.isFunction(storeCache.store.getConnection)) {
-    throw Error(`CacheStore connection failed. `);
-  }
-  await storeCache.store.client.getConnection();
-  return storeCache.store;
-}
-
-/**
- * initiation CacheStore connection and client.
- *
- */
-export async function InitCacheStore() {
-  if (storeCache.store) {
-    return;
-  }
-
-  const app = IOCContainer.getApp();
-  app?.once("appReady", async () => {
-    await GetCacheStore(app);
-  });
-}
-
-/**
- * @description: 
- * @param {*} func
- * @return {*}
- */
-export function getArgs(func: Function) {
-  // 首先匹配函数括弧里的参数
-  const args = func.toString().match(/.*?\(([^)]*)\)/);
-  if (args.length > 1) {
-    // 分解参数成数组
-    return args[1].split(",").map(function (a) {
-      // 去空格和内联注释
-      return a.replace(/\/\*.*\*\//, "").trim();
-    }).filter(function (ae) {
-      // 确保没有undefineds
-      return ae;
-    });
-  }
-  return [];
 }
 
 
 /**
- * @description: 
- * @param {string[]} funcParams
- * @param {string[]} params
- * @return {*}
+ * Get parameter indexes based on parameter names
+ * @param funcParams Function parameter names
+ * @param params Target parameter names to find indexes for
+ * @returns Array of parameter indexes (-1 if not found)
  */
 export function getParamIndex(funcParams: string[], params: string[]): number[] {
   return params.map(param => funcParams.indexOf(param));
 }
 
 /**
- * 
- * @param ms 
- * @returns 
+ * Create a delay promise
+ * @param ms Delay time in milliseconds
+ * @returns Promise that resolves after the specified delay
  */
-function delay(ms: number) {
+function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
- * async delayed execution func
- * @param fn 
- * @param ms 
- * @returns 
+ * Execute a function after a specified delay
+ * @param fn Function to execute
+ * @param ms Delay time in milliseconds
+ * @returns Promise that resolves with the function result
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function asyncDelayedExecution(fn: Function, ms: number) {
-  await delay(ms); // delay ms second
+export async function asyncDelayedExecution(fn: () => any, ms: number): Promise<any> {
+  await delay(ms);
   return fn();
+}
+
+const longKey = 128;
+/**
+ * Generate cache key based on cache name and parameters
+ * @param cacheName base cache name
+ * @param paramIndexes parameter indexes
+ * @param paramNames parameter names
+ * @param props method arguments
+ * @returns generated cache key
+ */
+export function generateCacheKey(cacheName: string, paramIndexes: number[], paramNames: string[], props: any[]): string {
+  let key = cacheName;
+  for (let i = 0; i < paramIndexes.length; i++) {
+    const paramIndex = paramIndexes[i];
+    if (paramIndex >= 0 && props[paramIndex] !== undefined) {
+      key += `:${paramNames[i]}:${Helper.toString(props[paramIndex])}`;
+    }
+  }
+  return key.length > longKey ? Helper.murmurHash(key) : key;
 }
