@@ -28,7 +28,7 @@ importers:
         specifier: ^19.x.x
         version: 19.5.0
       '@commitlint/format':
-        specifier: ^19.8.1
+        specifier: ^19.x.x
         version: 19.8.1
       '@microsoft/api-documenter':
         specifier: ^7.x.x
