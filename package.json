@@ -57,6 +57,7 @@
   "devDependencies": {
     "@commitlint/cli": "^19.x.x",
     "@commitlint/config-conventional": "^19.x.x",
+    "@commitlint/format": "^19.x.x",
     "@microsoft/api-documenter": "^7.x.x",
     "@microsoft/api-extractor": "^7.x.x",
     "@rollup/plugin-commonjs": "^28.x.x",
@@ -88,7 +89,7 @@
     "koatty_container": "^1.x.x",
     "koatty_lib": "^1.x.x",
     "koatty_logger": "^2.x.x",
-    "koatty_store": "^1.7.0"
+    "koatty_store": "^1.8.0"
   },
   "peerDependencies": {
     "koatty_container": "^1.x.x",
