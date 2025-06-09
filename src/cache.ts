@@ -155,11 +155,12 @@ export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
           });
 
           if (opt.delayedDoubleDeletion) {
+            const delayTime = 5000;
             asyncDelayedExecution(() => {
               store.del(key).catch((e): any => {
                 logger.error("Cache double delete error:" + e.message);
               });
-            }, 5000);
+            }, delayTime);
           }
           return result;
         } else {

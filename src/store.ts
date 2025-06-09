@@ -73,3 +73,23 @@ export async function InitCacheStore() {
     await GetCacheStore(app);
   });
 }
+
+/**
+ * Close cache store connection for cleanup (mainly for testing)
+ */
+export async function CloseCacheStore(): Promise<void> {
+  if (storeCache.store && storeCache.store.client) {
+    try {
+      const client = storeCache.store.client as any;
+      if (typeof client.quit === 'function') {
+        await client.quit();
+      } else if (typeof client.close === 'function') {
+        await client.close();
+      }
+    } catch {
+      // Ignore cleanup errors
+    } finally {
+      storeCache.store = null;
+    }
+  }
+}

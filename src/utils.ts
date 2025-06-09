@@ -11,6 +11,8 @@
 
 import { Helper } from "koatty_lib";
 
+const longKey = 128;
+
 /**
  * Extract parameter names from function signature
  * @param func The function to extract parameters from
@@ -37,7 +39,6 @@ export function getArgs(func: (...args: any[]) => any): string[] {
   }
 }
 
-
 /**
  * Get parameter indexes based on parameter names
  * @param funcParams Function parameter names
@@ -46,6 +47,25 @@ export function getArgs(func: (...args: any[]) => any): string[] {
  */
 export function getParamIndex(funcParams: string[], params: string[]): number[] {
   return params.map(param => funcParams.indexOf(param));
+}
+
+/**
+ * Generate cache key based on cache name and parameters
+ * @param cacheName base cache name
+ * @param paramIndexes parameter indexes
+ * @param paramNames parameter names
+ * @param props method arguments
+ * @returns generated cache key
+ */
+export function generateCacheKey(cacheName: string, paramIndexes: number[], paramNames: string[], props: any[]): string {
+  let key = cacheName;
+  for (let i = 0; i < paramIndexes.length; i++) {
+    const paramIndex = paramIndexes[i];
+    if (paramIndex >= 0 && props[paramIndex] !== undefined) {
+      key += `:${paramNames[i]}:${Helper.toString(props[paramIndex])}`;
+    }
+  }
+  return key.length > longKey ? Helper.murmurHash(key) : key;
 }
 
 /**
@@ -66,24 +86,4 @@ function delay(ms: number): Promise<void> {
 export async function asyncDelayedExecution(fn: () => any, ms: number): Promise<any> {
   await delay(ms);
   return fn();
-}
-
-const longKey = 128;
-/**
- * Generate cache key based on cache name and parameters
- * @param cacheName base cache name
- * @param paramIndexes parameter indexes
- * @param paramNames parameter names
- * @param props method arguments
- * @returns generated cache key
- */
-export function generateCacheKey(cacheName: string, paramIndexes: number[], paramNames: string[], props: any[]): string {
-  let key = cacheName;
-  for (let i = 0; i < paramIndexes.length; i++) {
-    const paramIndex = paramIndexes[i];
-    if (paramIndex >= 0 && props[paramIndex] !== undefined) {
-      key += `:${paramNames[i]}:${Helper.toString(props[paramIndex])}`;
-    }
-  }
-  return key.length > longKey ? Helper.murmurHash(key) : key;
 }
