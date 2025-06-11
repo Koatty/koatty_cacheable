@@ -10,7 +10,9 @@
 |  --- | --- |
 |  [CacheAble(cacheName, opt)](./koatty_cacheable.cacheable.md) | <p>Decorate this method to support caching. The cache method returns a value to ensure that the next time the method is executed with the same parameters, the results can be obtained directly from the cache without the need to execute the method again. CacheStore server config defined in db.ts.</p> |
 |  [CacheEvict(cacheName, opt)](./koatty_cacheable.cacheevict.md) | <p>Decorating the execution of this method will trigger a cache clear operation. CacheStore server config defined in db.ts.</p> |
+|  [CloseCacheStore()](./koatty_cacheable.closecachestore.md) | Close cache store connection for cleanup (mainly for testing) |
 |  [GetCacheStore(app)](./koatty_cacheable.getcachestore.md) | <p>get instances of storeCache</p> |
+|  [InitCacheStore()](./koatty_cacheable.initcachestore.md) | initiation CacheStore connection and client. |
 
 ## Interfaces
 

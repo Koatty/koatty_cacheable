@@ -25,6 +25,8 @@ module.exports = {
   ], // 测试用例报告
   collectCoverage: true, // 是否收集测试时的覆盖率信息
   clearMocks: true,
+  forceExit: true, // 强制退出Jest进程
+  detectOpenHandles: true, // 检测未关闭的句柄
   coverageReporters: [
     'html',
     'lcov',

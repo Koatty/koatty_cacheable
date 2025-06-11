@@ -9,9 +9,8 @@ import { IOCContainer } from 'koatty_container';
 import { Helper } from "koatty_lib";
 import { DefaultLogger as logger } from "koatty_logger";
 import { CacheStore } from "koatty_store";
-import { asyncDelayedExecution, getArgs, GetCacheStore, getParamIndex, InitCacheStore } from './utils';
-
-const longKey = 128;
+import { asyncDelayedExecution, generateCacheKey, getArgs, getParamIndex } from './utils';
+import { GetCacheStore, InitCacheStore } from './store';
 
 /**
  * @description: 
@@ -69,24 +68,18 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
     // Get the parameter list of the method
     const funcParams = getArgs((<any>target)[methodName]);
     // Get the defined parameter location
-    const paramIndexes = getParamIndex(funcParams, opt.params);
+    const paramIndexes = getParamIndex(funcParams, mergedOpt.params || []);
     descriptor = {
       configurable,
       enumerable,
       writable: true,
       async value(...props: any[]) {
         const store: CacheStore = await GetCacheStore(this.app).catch((e): any => {
-          logger.Error("Get cache store instance failed." + e.message);
+          logger.error("Get cache store instance failed." + e.message);
           return null;
         });
         if (store) {
-          let key = cacheName;
-          for (const item of paramIndexes) {
-            if (props[item] !== undefined) {
-              key += `:${mergedOpt.params[item]}:${Helper.toString(props[item])}`;
-            }
-          }
-          key = key.length > longKey ? Helper.murmurHash(key) : key;
+          const key = generateCacheKey(cacheName, paramIndexes, mergedOpt.params, props);
           const res = await store.get(key).catch((e): any => {
             logger.error("Cache get error:" + e.message)
           });
@@ -141,7 +134,7 @@ export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
     // Get the parameter list of the method
     const funcParams = getArgs((<any>target)[methodName]);
     // Get the defined parameter location
-    const paramIndexes = getParamIndex(funcParams, opt.params);
+    const paramIndexes = getParamIndex(funcParams, opt.params || []);
 
     descriptor = {
       configurable,
@@ -149,35 +142,30 @@ export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
       writable: true,
       async value(...props: any[]) {
         const store: CacheStore = await GetCacheStore(this.app).catch((e): any => {
-          logger.Error("Get cache store instance failed." + e.message);
+          logger.error("Get cache store instance failed." + e.message);
           return null;
         });
 
         if (store) {
-          let key = cacheName;
-          for (const item of paramIndexes) {
-            if (props[item] !== undefined) {
-              key += `:${opt.params[item]}:${Helper.toString(props[item])}`;
-            }
-          }
-          key = key.length > longKey ? Helper.murmurHash(key) : key;
+          const key = generateCacheKey(cacheName, paramIndexes, opt.params || [], props);
 
           const result = await value.apply(this, props);
           store.del(key).catch((e): any => {
-            logger.Error("Cache delete error:" + e.message);
+            logger.error("Cache delete error:" + e.message);
           });
 
           if (opt.delayedDoubleDeletion) {
+            const delayTime = 5000;
             asyncDelayedExecution(() => {
               store.del(key).catch((e): any => {
                 logger.error("Cache double delete error:" + e.message);
               });
-            }, 5000);
-            return result;
-          } else {
-            // tslint:disable-next-line: no-invalid-this
-            return value.apply(this, props);
+            }, delayTime);
           }
+          return result;
+        } else {
+          // If store is not available, execute method directly
+          return value.apply(this, props);
         }
       }
     };

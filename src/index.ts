@@ -9,5 +9,5 @@
  */
 
 export * from "./cache";
-export { GetCacheStore } from "./utils";
+export * from "./store";
 
