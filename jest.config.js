@@ -9,6 +9,7 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node', // 测试用例运行环境
   moduleDirectories: ["node_modules", "src"],
+  setupFilesAfterEnv: ['<rootDir>/test/jest.setup.js'],
   transform: {
     "^.+\\.(js|ts)?$": ['ts-jest', {
       // 编译 Typescript 所依赖的配置
