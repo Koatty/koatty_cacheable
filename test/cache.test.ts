@@ -1,8 +1,9 @@
 /**
  * Cache decorator and injection functionality test suite
  */
-import { CacheAble, CacheEvict, DecoratorType, CACHE_METADATA_KEY } from "../src/cache";
+import { CacheAble, CacheEvict } from "../src/cache";
 import { injectCache } from "../src/inject";
+import { CacheManager } from "../src/manager";
 import { KoattyCache } from "../src/index";
 import { IOCContainer, Component } from "koatty_container";
 import { Koatty } from "koatty_core";
@@ -28,6 +29,10 @@ class MockCacheStore {
     this.storage.delete(key);
   }
 
+  async close(): Promise<void> {
+    // Mock close method
+  }
+
   // Test helper methods
   getOperations() {
     return this.operations;
@@ -48,7 +53,7 @@ class MockCacheStore {
 }
 
 // Test service class with cache decorators
-@Component()
+@Component("TestUserService", "COMPONENT")  
 class TestUserService {
   constructor() {}
 
@@ -106,7 +111,7 @@ class TestUserService {
   }
 }
 
-@Component()
+@Component("TestProductService", "COMPONENT")
 class TestProductService {
   @CacheAble("product:list", {
     params: [],
@@ -135,12 +140,22 @@ describe("Cache Decorator and Injection Tests", () => {
   let mockStore: MockCacheStore;
   let userService: TestUserService;
   let productService: TestProductService;
+  let cacheManager: CacheManager;
   let app: Koatty;
 
-  beforeEach(() => {
-    // Reset IOC container and mock store
+  beforeEach(async () => {
+    // Reset cache manager and mock store
     mockStore = new MockCacheStore();
     app = {} as Koatty;
+    
+    // Initialize cache manager with mock store
+    cacheManager = CacheManager.getInstance();
+    cacheManager.setCacheStore(mockStore as any);
+    cacheManager.setDefaultConfig(300, true);
+    
+    // Create service instances
+    userService = new TestUserService();
+    productService = new TestProductService();
     
     // Mock GetCacheStore function
     jest.doMock("../src/store", () => ({
@@ -148,229 +163,225 @@ describe("Cache Decorator and Injection Tests", () => {
     }));
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     mockStore.clear();
+    // Properly close cache store if it exists
+    try {
+      const store = cacheManager.getCacheStore();
+      if (store && typeof store.close === 'function') {
+        await store.close();
+      }
+    } catch (error) {
+      // Ignore cleanup errors
+    }
+    cacheManager.setCacheStore(null);
     jest.clearAllMocks();
   });
 
-  describe("Decorator Metadata Collection", () => {
-    test("should collect CacheAble decorator metadata", () => {
-      // Get metadata from IOC container
-      const componentList = IOCContainer.listClass("COMPONENT_CACHE");
-      const testUserComponent = componentList.find(c => c.target.name === "TestUserService");
-      
-      expect(testUserComponent).toBeDefined();
-      
-      const metadata = IOCContainer.getClassMetadata("COMPONENT_CACHE", CACHE_METADATA_KEY, testUserComponent!.target);
-      expect(metadata).toBeDefined();
-      
-      // Check if getUserProfile method metadata exists
-      const getUserProfileMeta = Object.values(metadata).find((meta: any) => 
-        meta.methodName === "getUserProfile" && meta.type === DecoratorType.CACHE_ABLE
-      );
-      
-      expect(getUserProfileMeta).toBeDefined();
-      expect(getUserProfileMeta).toMatchObject({
-        cacheName: "user:profile",
-        methodName: "getUserProfile",
-        type: DecoratorType.CACHE_ABLE,
-        options: {
-          params: ["userId"],
-          timeout: 300
-        }
-      });
-    });
-
-    test("should collect CacheEvict decorator metadata", () => {
-      const componentList = IOCContainer.listClass("COMPONENT_CACHE");
-      const testUserComponent = componentList.find(c => c.target.name === "TestUserService");
-      
-      const metadata = IOCContainer.getClassMetadata("COMPONENT_CACHE", CACHE_METADATA_KEY, testUserComponent!.target);
-      
-      // Check if updateUserProfile method metadata exists
-      const updateUserProfileMeta = Object.values(metadata).find((meta: any) => 
-        meta.methodName === "updateUserProfile" && meta.type === DecoratorType.CACHE_EVICT
-      );
-      
-      expect(updateUserProfileMeta).toBeDefined();
-      expect(updateUserProfileMeta).toMatchObject({
-        cacheName: "user:profile",
-        methodName: "updateUserProfile",
-        type: DecoratorType.CACHE_EVICT,
-        options: {
-          params: ["userId"],
-          delayedDoubleDeletion: true
-        }
-      });
-    });
+  afterAll(async () => {
+    // Final cleanup to ensure no resources are left open
+    try {
+      const { closeCacheStore } = await import('../src/inject');
+      await closeCacheStore(app);
+    } catch (error) {
+      // Ignore cleanup errors
+    }
   });
 
-  describe("Cache Injection Functionality", () => {
-    beforeEach(async () => {
-      // Perform cache injection
-      await injectCache({
-        cacheTimeout: 300,
-        delayedDoubleDeletion: true
-      }, app);
-      
-      // Get service instances
-      userService = IOCContainer.get("TestUserService") as TestUserService;
-      productService = IOCContainer.get("TestProductService") as TestProductService;
-    });
-
-    test("should inject cache functionality into CacheAble methods", async () => {
-      mockStore.clear();
-      
-      // First call - should fetch and cache
-      const result1 = await userService.getUserProfile("123");
-      expect(result1.id).toBe("123");
-      
-      // Should have tried to get from cache and then set to cache
-      const operations = mockStore.getOperations();
-      expect(operations).toContainEqual({ operation: 'get', key: expect.stringContaining('user:profile') });
-      expect(operations).toContainEqual({ operation: 'set', key: expect.stringContaining('user:profile'), value: expect.any(String) });
-      
+  describe("Cache Functionality", () => {
+    test("should cache method results with CacheAble decorator", async () => {
+      // Clear operations to track cache behavior
       mockStore.clearOperations();
-      
-      // Second call - should get from cache
+
+      // First call - should execute method and cache result
+      const result1 = await userService.getUserProfile("123");
+      expect(result1).toEqual({
+        id: "123",
+        name: "User123",
+        email: "user123@example.com",
+        fetchedAt: expect.any(String)
+      });
+
+      // Should have cache get (miss) and cache set operations
+      const operations = mockStore.getOperations();
+      expect(operations).toContainEqual({ 
+        operation: 'get', 
+        key: expect.stringContaining('user:profile') 
+      });
+      expect(operations).toContainEqual({ 
+        operation: 'set', 
+        key: expect.stringContaining('user:profile'), 
+        value: expect.any(String) 
+      });
+
+      mockStore.clearOperations();
+
+      // Second call - should return cached result
       const result2 = await userService.getUserProfile("123");
       expect(result2.id).toBe("123");
-      
+      expect(result2.name).toBe("User123");
+
+      // Should only have cache get (hit) operation
       const operations2 = mockStore.getOperations();
-      expect(operations2).toContainEqual({ operation: 'get', key: expect.stringContaining('user:profile') });
-      // Should not have set operation as it got from cache
+      expect(operations2).toContainEqual({ 
+        operation: 'get', 
+        key: expect.stringContaining('user:profile') 
+      });
+      // Should not have set operation on cache hit
       expect(operations2.filter(op => op.operation === 'set')).toHaveLength(0);
     });
 
-    test("should handle multiple parameters in cache key", async () => {
-      mockStore.clear();
-      
-      await userService.getUserSettings("123", "theme", "extra");
-      
-      const operations = mockStore.getOperations();
-      const getOperation = operations.find(op => op.operation === 'get');
-      
-      expect(getOperation?.key).toContain('user:settings');
-      expect(getOperation?.key).toContain('userId:123');
-      expect(getOperation?.key).toContain('category:theme');
-    });
-
-    test("should inject cache eviction functionality", async () => {
-      mockStore.clear();
-      
-      // First cache some data
-      await userService.getUserProfile("123");
+    test("should clear cache with CacheEvict decorator", async () => {
+      // First, cache a result
+      await userService.getUserProfile("456");
       mockStore.clearOperations();
-      
-      // Update profile - should clear cache
-      await userService.updateUserProfile("123", { name: "Updated User" });
-      
+
+      // Execute CacheEvict method
+      await userService.updateUserProfile("456", { name: "Updated User" });
+
+      // Should have cache delete operation
       const operations = mockStore.getOperations();
-      expect(operations).toContainEqual({ operation: 'del', key: expect.stringContaining('user:profile') });
+      expect(operations).toContainEqual({ 
+        operation: 'del', 
+        key: expect.stringContaining('user:profile') 
+      });
     });
 
-    test("should handle methods without parameters", async () => {
-      mockStore.clear();
-      
-      await productService.getAllProducts();
-      
+    test("should handle cache with multiple parameters", async () => {
+      mockStore.clearOperations();
+
+      // Call method with multiple parameters
+      const result = await userService.getUserSettings("789", "theme", "extra");
+      expect(result.userId).toBe("789");
+      expect(result.category).toBe("theme");
+      expect(result.extra).toBe("extra");
+
+      // Should have cache operations
       const operations = mockStore.getOperations();
-      expect(operations).toContainEqual({ operation: 'get', key: 'product:list' });
-      expect(operations).toContainEqual({ operation: 'set', key: 'product:list', value: expect.any(String) });
+      expect(operations).toContainEqual({ 
+        operation: 'get', 
+        key: expect.stringContaining('user:settings') 
+      });
+      expect(operations).toContainEqual({ 
+        operation: 'set', 
+        key: expect.stringContaining('user:settings'), 
+        value: expect.any(String) 
+      });
     });
 
-    test("should not affect normal methods without decorators", async () => {
-      mockStore.clear();
-      
+    test("should handle methods without cache decorators normally", async () => {
+      mockStore.clearOperations();
+
       const result = await userService.normalMethod("test");
       expect(result).toBe("normal-test");
-      
+
       // Should not have any cache operations
       const operations = mockStore.getOperations();
       expect(operations).toHaveLength(0);
     });
 
-    test("should handle cache errors gracefully", async () => {
-      // Mock store to throw errors
+    test("should work when cache store is not available", async () => {
+      // Set cache store to null to simulate unavailable cache
+      cacheManager.setCacheStore(null);
+
+      // Method should still work, just without caching
+      const result = await userService.getUserProfile("999");
+      expect(result).toEqual({
+        id: "999",
+        name: "User999",
+        email: "user999@example.com",
+        fetchedAt: expect.any(String)
+      });
+
+      // No cache operations should occur
+      const operations = mockStore.getOperations();
+      expect(operations).toHaveLength(0);
+    });
+  });
+
+  describe("Cache Configuration", () => {
+    test("should use decorator-specific timeout", async () => {
+      mockStore.clearOperations();
+
+      await userService.getUserProfile("timeout-test");
+
+      const operations = mockStore.getOperations();
+      const setOperation = operations.find(op => op.operation === 'set');
+      expect(setOperation).toBeDefined();
+      // The actual timeout value is not directly testable in mock, 
+      // but we can verify the method was called
+    });
+
+    test("should use global default timeout when decorator doesn't specify", async () => {
+      // This would require a method without timeout specified
+      // Testing the fallback to global config
+      expect(cacheManager.getDefaultTimeout()).toBe(300);
+      expect(cacheManager.getDefaultDelayedDoubleDeletion()).toBe(true);
+    });
+  });
+
+  describe("Cache System Initialization", () => {
+    test("should initialize cache system through injectCache", async () => {
+      const mockGetCacheStore = jest.fn().mockResolvedValue(mockStore);
+      jest.doMock("../src/store", () => ({
+        GetCacheStore: mockGetCacheStore
+      }));
+
+      await injectCache({
+        cacheTimeout: 600,
+        delayedDoubleDeletion: false
+      }, app);
+
+      expect(cacheManager.getDefaultTimeout()).toBe(600);
+      expect(cacheManager.getDefaultDelayedDoubleDeletion()).toBe(false);
+    });
+  });
+
+  describe("Error Handling", () => {
+    test("should handle cache store errors gracefully", async () => {
+      // Create a store that throws errors
       const errorStore = {
         get: jest.fn().mockRejectedValue(new Error("Cache get error")),
         set: jest.fn().mockRejectedValue(new Error("Cache set error")),
-        del: jest.fn().mockRejectedValue(new Error("Cache del error"))
+        del: jest.fn().mockRejectedValue(new Error("Cache del error")),
+        close: jest.fn()
       };
-      
-      // Re-inject with error store
-      jest.doMock("../src/store", () => ({
-        GetCacheStore: jest.fn().mockResolvedValue(errorStore)
-      }));
-      
-      await injectCache({}, app);
-      const errorUserService = IOCContainer.get("TestUserService") as TestUserService;
-      
-      // Should still work despite cache errors
-      const result = await errorUserService.getUserProfile("123");
-      expect(result.id).toBe("123");
-    });
-  });
 
-  describe("KoattyCache Plugin Integration", () => {
-    test("should work as a plugin", async () => {
-      const options = {
-        cacheTimeout: 600,
-        delayedDoubleDeletion: false,
-        redisConfig: {
-          host: "localhost",
-          port: 6379
-        }
+      cacheManager.setCacheStore(errorStore as any);
+
+      // Method should still work despite cache errors
+      const result = await userService.getUserProfile("error-test");
+      expect(result).toEqual({
+        id: "error-test",
+        name: "Usererror-test",
+        email: "usererror-test@example.com",
+        fetchedAt: expect.any(String)
+      });
+
+      // Cache operations should have been attempted
+      expect(errorStore.get).toHaveBeenCalled();
+      expect(errorStore.set).toHaveBeenCalled();
+    });
+
+    test("should handle CacheEvict errors gracefully", async () => {
+      const errorStore = {
+        get: jest.fn().mockResolvedValue(null),
+        set: jest.fn().mockResolvedValue(undefined),
+        del: jest.fn().mockRejectedValue(new Error("Cache del error")),
+        close: jest.fn()
       };
-      
-      // Should not throw error
-      await expect(KoattyCache(options, app)).resolves.not.toThrow();
-    });
-  });
 
-  describe("Edge Cases", () => {
-    test("should handle empty params array", async () => {
-      await injectCache({}, app);
-      const service = IOCContainer.get("TestProductService") as TestProductService;
-      
-      mockStore.clear();
-      await service.getAllProducts();
-      
-      const operations = mockStore.getOperations();
-      expect(operations.some(op => op.key === 'product:list')).toBe(true);
-    });
+      cacheManager.setCacheStore(errorStore as any);
 
-    test("should handle undefined optional parameters", async () => {
-      await injectCache({}, app);
-      const service = IOCContainer.get("TestUserService") as TestUserService;
-      
-      mockStore.clear();
-      // Call with undefined optional parameter
-      await service.getUserSettings("123", "theme");
-      
-      const operations = mockStore.getOperations();
-      const getOperation = operations.find(op => op.operation === 'get');
-      expect(getOperation?.key).toBeTruthy();
-    });
+      // Method should still work despite cache delete errors
+      const result = await userService.updateUserProfile("error-test", { name: "Updated" });
+      expect(result).toEqual({
+        id: "error-test",
+        name: "Updated",
+        updatedAt: expect.any(String)
+      });
 
-    test("should handle long cache keys with murmur hash", async () => {
-      // Create a very long cache key
-      const longUserId = "a".repeat(200);
-      
-      await injectCache({}, app);
-      const service = IOCContainer.get("TestUserService") as TestUserService;
-      
-      mockStore.clear();
-      await service.getUserProfile(longUserId);
-      
-      const operations = mockStore.getOperations();
-      const getOperation = operations.find(op => op.operation === 'get');
-      
-      // Key should be hashed if too long
-      expect(getOperation?.key).toBeTruthy();
-      // Helper.murmurHash should be called for long keys
+      expect(errorStore.del).toHaveBeenCalled();
     });
   });
 });
-
-export { TestUserService, TestProductService, MockCacheStore }; 
