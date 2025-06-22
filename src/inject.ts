@@ -7,27 +7,16 @@
  * @License: BSD (3-Clause)
  * @Copyright (c): <richenlin(at)gmail.com>
  */
-import { Koatty } from "koatty_core";
-import { IOCContainer } from "koatty_container";
-import { Helper } from "koatty_lib";
-import { DefaultLogger as logger } from "koatty_logger";
-import { CacheStore } from "koatty_store";
-import { GetCacheStore } from "./store";
-import { CACHE_METADATA_KEY, DecoratorType } from "./cache";
-import { asyncDelayedExecution, generateCacheKey, getArgs, getParamIndex } from './utils';
+// import { Helper } from 'koatty_lib';
+import { Logger } from 'koatty_logger';
+import { Koatty } from 'koatty_core';
+import { GetCacheStore } from './store';
+import { CacheManager } from './manager';
 
-/**
- * Cache options
- */
-export interface CacheOptions {
-  cacheTimeout?: number;
-  delayedDoubleDeletion?: boolean;
-  redisConfig?: RedisConfig;
-}
+// Create logger instance
+const logger = new Logger();
 
-/**
- * Redis configuration
- */
+// Redis configuration interface
 export interface RedisConfig {
   host?: string;
   port?: number;
@@ -36,202 +25,92 @@ export interface RedisConfig {
   keyPrefix?: string;
 }
 
-// IOC container key constant
-const COMPONENT_CACHE = "COMPONENT_CACHE";
+// Cache configuration interface
+export interface CacheOptions {
+  cacheTimeout?: number;
+  delayedDoubleDeletion?: boolean;
+  redisConfig?: RedisConfig;
+}
 
 /**
- * Cache injector - unified processing of all cache decorators at application startup
+ * Cache injector - initialize global cache manager and store
  * @param options Cache options
  * @param app Koatty application instance
  */
 export async function injectCache(options: CacheOptions, app: Koatty) {
   try {
-    logger.Info('Starting cache decorator injection...');
+    logger.Debug('Initializing cache system...');
     
     // Get cache store instance
-    const store: CacheStore = await GetCacheStore(app);
+    const store = await GetCacheStore(app);
     if (!store) {
-      logger.Warn('Cache store unavailable, skipping cache injection');
+      logger.Warn('Cache store unavailable, cache system disabled');
       return;
     }
 
-    // Get all registered cache component classes
-    const componentList = IOCContainer.listClass(COMPONENT_CACHE);
-    let processedCount = 0;
+    // Initialize global cache manager
+    const cacheManager = CacheManager.getInstance();
+    cacheManager.setCacheStore(store);
+    
+    // Set default configuration
+    cacheManager.setDefaultConfig(
+      options.cacheTimeout || 300,
+      options.delayedDoubleDeletion !== undefined ? options.delayedDoubleDeletion : true
+    );
 
-    for (const component of componentList) {
-      try {
-        // Get all cache-related metadata for the class
-        const classMetadata = IOCContainer.getClassMetadata(COMPONENT_CACHE, CACHE_METADATA_KEY, component.target);
-        if (!classMetadata) {
-          continue;
-        }
-
-        // Get class instance
-        const instance: any = IOCContainer.get(component.target.name);
-        if (!instance) {
-          logger.Debug(`Cannot get class instance: ${component.target.name}`);
-          continue;
-        }
-
-        // Process cache decorators for each method
-        for (const [, metadata] of Object.entries(classMetadata)) {
-          if (typeof metadata !== 'object' || !(metadata as any).type) {
-            continue;
-          }
-
-          const cacheMetadata = metadata as {
-            cacheName: string;
-            methodName: string;
-            options: any;
-            type: DecoratorType;
-          };
-
-          const originalMethod = instance[cacheMetadata.methodName];
-          if (!Helper.isFunction(originalMethod)) {
-            logger.Debug(`Method ${cacheMetadata.methodName} is not a function, skipping`);
-            continue;
-          }
-
-          // Wrap method based on decorator type
-          if (cacheMetadata.type === DecoratorType.CACHE_ABLE) {
-            instance[cacheMetadata.methodName] = createCacheAbleWrapper(
-              originalMethod,
-              cacheMetadata.cacheName,
-              cacheMetadata.options,
-              store,
-              options,
-              app
-            );
-          } else if (cacheMetadata.type === DecoratorType.CACHE_EVICT) {
-            instance[cacheMetadata.methodName] = createCacheEvictWrapper(
-              originalMethod,
-              cacheMetadata.cacheName,
-              cacheMetadata.options,
-              store,
-              options,
-              app
-            );
-          }
-
-          processedCount++;
-          logger.Debug(`Processed cache method: ${component.target.name}.${cacheMetadata.methodName}`);
-        }
-      } catch (error) {
-        logger.Error(`Error processing class ${component.target.name}:`, error);
-      }
-    }
-
-    logger.Info(`Cache decorator injection completed, processed ${processedCount} methods`);
+    logger.Info(`Cache system initialized successfully with timeout: ${options.cacheTimeout || 300}s`);
   } catch (error) {
-    logger.Error('Cache injection failed:', error);
+    logger.Error('Cache system initialization failed:', error);
   }
 }
 
 /**
- * Create CacheAble wrapper
+ * Close cache store connection
+ * @param app Koatty application instance
  */
-function createCacheAbleWrapper(
-  originalMethod: (...args: any[]) => any,
-  cacheName: string,
-  decoratorOptions: any,
-  store: CacheStore,
-  globalOptions: CacheOptions,
-  _app: Koatty
-) {
-  // Get method parameter list
-  const funcParams = getArgs(originalMethod);
-  // Get cache parameter positions
-  const paramIndexes = getParamIndex(funcParams, decoratorOptions.params || []);
-
-  return async function (...props: any[]) {
-    try {
-      // Generate cache key
-      const key = generateCacheKey(cacheName, paramIndexes, decoratorOptions.params || [], props);
-      
-      // Try to get data from cache
-      const cached = await store.get(key).catch((e): any => {
-        logger.Debug("Cache get error:" + e.message);
-        return null;
-      });
-
-      if (!Helper.isEmpty(cached)) {
-        return JSON.parse(cached);
-      }
-
-      // Execute original method
-      const result = await originalMethod.apply(this, props);
-      
-      // Use decorator timeout if specified, otherwise use global default
-      const timeout = decoratorOptions.timeout || globalOptions.cacheTimeout || 300;
-      
-      // Asynchronously set cache
-      store.set(
-        key, 
-        Helper.isJSONObj(result) ? JSON.stringify(result) : result,
-        timeout
-      ).catch((e): any => {
-        logger.Debug("Cache set error:" + e.message);
-      });
-
-      return result;
-    } catch (error) {
-      logger.Debug(`CacheAble wrapper error: ${error.message}`);
-      // If cache operation fails, execute original method directly
-      return originalMethod.apply(this, props);
-    }
-  };
+export async function closeCacheStore(_app: Koatty) {
+  try {
+    logger.Debug('Closing cache store connection...');
+    
+    // Reset global cache manager
+    const cacheManager = CacheManager.getInstance();
+    const store = cacheManager.getCacheStore();
+    await store?.close();
+    cacheManager.setCacheStore(null);
+    
+    logger.Info('Cache store connection closed');
+  } catch (error) {
+    logger.Error('Error closing cache store connection:', error);
+  }
 }
 
 /**
- * Create CacheEvict wrapper
+ * KoattyCache plugin
+ * @param options Cache configuration options
+ * @returns Plugin function
  */
-function createCacheEvictWrapper(
-  originalMethod: (...args: any[]) => any,
-  cacheName: string,
-  decoratorOptions: any,
-  store: CacheStore,
-  globalOptions: CacheOptions,
-  _app: Koatty
-) {
-  // Get method parameter list
-  const funcParams = getArgs(originalMethod);
-  // Get cache parameter positions
-  const paramIndexes = getParamIndex(funcParams, decoratorOptions.params || []);
+export function KoattyCache(options: CacheOptions = {}) {
+  return async function (app: Koatty, next: () => void) {
+    // Set default configuration
+    const defaultOptions: CacheOptions = {
+      cacheTimeout: 300,
+      delayedDoubleDeletion: true,
+      ...options
+    };
 
-  return async function (...props: any[]) {
     try {
-      // Generate cache key
-      const key = generateCacheKey(cacheName, paramIndexes, decoratorOptions.params || [], props);
+      // Initialize cache system
+      await injectCache(defaultOptions, app);
       
-      // Execute original method
-      const result = await originalMethod.apply(this, props);
-      
-      // Immediately clear cache
-      store.del(key).catch((e): any => {
-        logger.Debug("Cache delete error:" + e.message);
+      // Register cleanup on app shutdown
+      app.on('appStop', async () => {
+        await closeCacheStore(app);
       });
 
-      // Use decorator setting if specified, otherwise use global default
-      const enableDelayedDeletion = decoratorOptions.delayedDoubleDeletion !== undefined 
-        ? decoratorOptions.delayedDoubleDeletion 
-        : globalOptions.delayedDoubleDeletion;
-
-      // Delayed double deletion strategy
-      if (enableDelayedDeletion !== false) {
-        const delayTime = 5000;
-        asyncDelayedExecution(() => {
-          store.del(key).catch((e): any => {
-            logger.Debug("Cache double delete error:" + e.message);
-          });
-        }, delayTime);
-      }
-
-      return result;
+      next();
     } catch (error) {
-      logger.Debug(`CacheEvict wrapper error: ${error.message}`);
-      // If cache operation fails, execute original method directly
-      return originalMethod.apply(this, props);
+      logger.Error('KoattyCache plugin initialization failed:', error);
+      next();
     }
   };
 }
