@@ -4,7 +4,7 @@
 
 ## CacheAbleOpt interface
 
-@<!-- -->description:  {<!-- -->\*<!-- -->}
+@<!-- -->description: CacheAble decorator options
 
 **Signature:**
 
@@ -16,6 +16,7 @@ export interface CacheAbleOpt
 
 |  Property | Modifiers | Type | Description |
 |  --- | --- | --- | --- |
+|  [cacheName?](./koatty_cacheable.cacheableopt.cachename.md) |  | string | _(Optional)_ |
 |  [params?](./koatty_cacheable.cacheableopt.params.md) |  | string\[\] | _(Optional)_ |
 |  [timeout?](./koatty_cacheable.cacheableopt.timeout.md) |  | number | _(Optional)_ |
 

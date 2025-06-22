@@ -4,7 +4,7 @@
 
 ## CacheEvictOpt interface
 
-@<!-- -->description:  {<!-- -->\*<!-- -->}
+@<!-- -->description: CacheEvict decorator options
 
 **Signature:**
 
@@ -16,6 +16,7 @@ export interface CacheEvictOpt
 
 |  Property | Modifiers | Type | Description |
 |  --- | --- | --- | --- |
+|  [cacheName?](./koatty_cacheable.cacheevictopt.cachename.md) |  | string | _(Optional)_ |
 |  [delayedDoubleDeletion?](./koatty_cacheable.cacheevictopt.delayeddoubledeletion.md) |  | boolean | _(Optional)_ |
 |  [params?](./koatty_cacheable.cacheevictopt.params.md) |  | string\[\] | _(Optional)_ |
 

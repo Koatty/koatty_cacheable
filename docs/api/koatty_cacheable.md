@@ -4,20 +4,30 @@
 
 ## koatty\_cacheable package
 
+## Enumerations
+
+|  Enumeration | Description |
+|  --- | --- |
+|  [DecoratorType](./koatty_cacheable.decoratortype.md) |  |
+
 ## Functions
 
 |  Function | Description |
 |  --- | --- |
-|  [CacheAble(cacheName, opt)](./koatty_cacheable.cacheable.md) | <p>Decorate this method to support caching. The cache method returns a value to ensure that the next time the method is executed with the same parameters, the results can be obtained directly from the cache without the need to execute the method again. CacheStore server config defined in db.ts.</p> |
-|  [CacheEvict(cacheName, opt)](./koatty_cacheable.cacheevict.md) | <p>Decorating the execution of this method will trigger a cache clear operation. CacheStore server config defined in db.ts.</p> |
-|  [CloseCacheStore()](./koatty_cacheable.closecachestore.md) | Close cache store connection for cleanup (mainly for testing) |
-|  [GetCacheStore(app)](./koatty_cacheable.getcachestore.md) | <p>get instances of storeCache</p> |
-|  [InitCacheStore()](./koatty_cacheable.initcachestore.md) | initiation CacheStore connection and client. |
+|  [CacheAble(cacheNameOrOpt, opt)](./koatty_cacheable.cacheable.md) | <p>Decorate this method to support caching. The cache method returns a value to ensure that the next time the method is executed with the same parameters, the results can be obtained directly from the cache without the need to execute the method again. CacheStore server config defined in db.ts.</p> |
+|  [CacheEvict(cacheNameOrOpt, opt)](./koatty_cacheable.cacheevict.md) | <p>Decorating the execution of this method will trigger a cache clear operation. CacheStore server config defined in db.ts.</p> |
+|  [KoattyCache(options, app)](./koatty_cacheable.koattycache.md) |  |
 
 ## Interfaces
 
 |  Interface | Description |
 |  --- | --- |
-|  [CacheAbleOpt](./koatty_cacheable.cacheableopt.md) | @<!-- -->description:  {<!-- -->\*<!-- -->} |
-|  [CacheEvictOpt](./koatty_cacheable.cacheevictopt.md) | @<!-- -->description:  {<!-- -->\*<!-- -->} |
+|  [CacheAbleOpt](./koatty_cacheable.cacheableopt.md) | @<!-- -->description: CacheAble decorator options |
+|  [CacheEvictOpt](./koatty_cacheable.cacheevictopt.md) | @<!-- -->description: CacheEvict decorator options |
+
+## Variables
+
+|  Variable | Description |
+|  --- | --- |
+|  [CACHE\_METADATA\_KEY](./koatty_cacheable.cache_metadata_key.md) |  |
 

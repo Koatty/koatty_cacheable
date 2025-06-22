@@ -10,18 +10,18 @@ Decorating the execution of this method will trigger a cache clear operation. Ca
 **Signature:**
 
 ```typescript
-export declare function CacheEvict(cacheName: string, opt?: CacheEvictOpt): (target: any, methodName: string, descriptor: PropertyDescriptor) => PropertyDescriptor;
+export declare function CacheEvict(cacheNameOrOpt?: string | CacheEvictOpt, opt?: CacheEvictOpt): MethodDecorator;
 ```
 
 ## Parameters
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  cacheName | string | cacheName cache name |
+|  cacheNameOrOpt | string \| [CacheEvictOpt](./koatty_cacheable.cacheevictopt.md) | _(Optional)_ |
 |  opt | [CacheEvictOpt](./koatty_cacheable.cacheevictopt.md) | _(Optional)_ cache options e.g: { params: \["id"\], delayedDoubleDeletion: true } Use the 'id' parameters of the method as cache subkeys, and clear the cache after the method executed |
 
 **Returns:**
 
-(target: any, methodName: string, descriptor: PropertyDescriptor) =&gt; PropertyDescriptor
+MethodDecorator
 
 
