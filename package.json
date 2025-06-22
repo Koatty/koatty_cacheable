@@ -87,12 +87,14 @@
   },
   "dependencies": {
     "koatty_container": "^1.x.x",
+    "koatty_core": "^1.x.x",
     "koatty_lib": "^1.x.x",
     "koatty_logger": "^2.x.x",
     "koatty_store": "^1.x.x"
   },
   "peerDependencies": {
     "koatty_container": "^1.x.x",
+    "koatty_core": "^1.x.x",
     "koatty_lib": "^1.x.x",
     "koatty_logger": "^2.x.x"
   }
