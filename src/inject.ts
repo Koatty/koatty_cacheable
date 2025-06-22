@@ -100,6 +100,7 @@ export async function injectCache(options: CacheOptions, app: Koatty) {
               cacheMetadata.cacheName,
               cacheMetadata.options,
               store,
+              options,
               app
             );
           } else if (cacheMetadata.type === DecoratorType.CACHE_EVICT) {
@@ -108,6 +109,7 @@ export async function injectCache(options: CacheOptions, app: Koatty) {
               cacheMetadata.cacheName,
               cacheMetadata.options,
               store,
+              options,
               app
             );
           }
@@ -132,19 +134,20 @@ export async function injectCache(options: CacheOptions, app: Koatty) {
 function createCacheAbleWrapper(
   originalMethod: (...args: any[]) => any,
   cacheName: string,
-  options: any,
+  decoratorOptions: any,
   store: CacheStore,
+  globalOptions: CacheOptions,
   _app: Koatty
 ) {
   // Get method parameter list
   const funcParams = getArgs(originalMethod);
   // Get cache parameter positions
-  const paramIndexes = getParamIndex(funcParams, options.params || []);
+  const paramIndexes = getParamIndex(funcParams, decoratorOptions.params || []);
 
   return async function (...props: any[]) {
     try {
       // Generate cache key
-      const key = generateCacheKey(cacheName, paramIndexes, options.params || [], props);
+      const key = generateCacheKey(cacheName, paramIndexes, decoratorOptions.params || [], props);
       
       // Try to get data from cache
       const cached = await store.get(key).catch((e): any => {
@@ -159,18 +162,21 @@ function createCacheAbleWrapper(
       // Execute original method
       const result = await originalMethod.apply(this, props);
       
+      // Use decorator timeout if specified, otherwise use global default
+      const timeout = decoratorOptions.timeout || globalOptions.cacheTimeout || 300;
+      
       // Asynchronously set cache
       store.set(
         key, 
         Helper.isJSONObj(result) ? JSON.stringify(result) : result,
-        options.timeout || 300
+        timeout
       ).catch((e): any => {
         logger.Debug("Cache set error:" + e.message);
       });
 
       return result;
     } catch (error) {
-      logger.Error(`CacheAble wrapper error: ${error.message}`);
+      logger.Debug(`CacheAble wrapper error: ${error.message}`);
       // If cache operation fails, execute original method directly
       return originalMethod.apply(this, props);
     }
@@ -183,19 +189,20 @@ function createCacheAbleWrapper(
 function createCacheEvictWrapper(
   originalMethod: (...args: any[]) => any,
   cacheName: string,
-  options: any,
+  decoratorOptions: any,
   store: CacheStore,
+  globalOptions: CacheOptions,
   _app: Koatty
 ) {
   // Get method parameter list
   const funcParams = getArgs(originalMethod);
   // Get cache parameter positions
-  const paramIndexes = getParamIndex(funcParams, options.params || []);
+  const paramIndexes = getParamIndex(funcParams, decoratorOptions.params || []);
 
   return async function (...props: any[]) {
     try {
       // Generate cache key
-      const key = generateCacheKey(cacheName, paramIndexes, options.params || [], props);
+      const key = generateCacheKey(cacheName, paramIndexes, decoratorOptions.params || [], props);
       
       // Execute original method
       const result = await originalMethod.apply(this, props);
@@ -205,8 +212,13 @@ function createCacheEvictWrapper(
         logger.Debug("Cache delete error:" + e.message);
       });
 
+      // Use decorator setting if specified, otherwise use global default
+      const enableDelayedDeletion = decoratorOptions.delayedDoubleDeletion !== undefined 
+        ? decoratorOptions.delayedDoubleDeletion 
+        : globalOptions.delayedDoubleDeletion;
+
       // Delayed double deletion strategy
-      if (options.delayedDoubleDeletion !== false) {
+      if (enableDelayedDeletion !== false) {
         const delayTime = 5000;
         asyncDelayedExecution(() => {
           store.del(key).catch((e): any => {
@@ -217,7 +229,7 @@ function createCacheEvictWrapper(
 
       return result;
     } catch (error) {
-      logger.Error(`CacheEvict wrapper error: ${error.message}`);
+      logger.Debug(`CacheEvict wrapper error: ${error.message}`);
       // If cache operation fails, execute original method directly
       return originalMethod.apply(this, props);
     }
