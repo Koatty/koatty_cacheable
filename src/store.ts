@@ -7,7 +7,7 @@
  * @License: BSD (3-Clause)
  * @Copyright (c): <richenlin(at)gmail.com>
  */
-import { Application, IOCContainer } from "koatty_container";
+import { Koatty } from "koatty_core";
 import { Helper } from "koatty_lib";
 import { DefaultLogger as logger } from "koatty_logger";
 import { CacheStore, StoreOptions } from "koatty_store";
@@ -35,7 +35,7 @@ const storeCache: CacheStoreInterface = {
  * @param {Application} app
  * @returns {*}  {CacheStore}
  */
-export async function GetCacheStore(app?: Application): Promise<CacheStore> {
+export async function GetCacheStore(app?: Koatty): Promise<CacheStore> {
   if (storeCache.store && storeCache.store.getConnection) {
     return storeCache.store;
   }
@@ -57,21 +57,6 @@ export async function GetCacheStore(app?: Application): Promise<CacheStore> {
   }
   await storeCache.store.client.getConnection();
   return storeCache.store;
-}
-
-/**
- * initiation CacheStore connection and client.
- *
- */
-export async function InitCacheStore() {
-  if (storeCache.store) {
-    return;
-  }
-
-  const app = IOCContainer.getApp();
-  app?.once("appReady", async () => {
-    await GetCacheStore(app);
-  });
 }
 
 /**

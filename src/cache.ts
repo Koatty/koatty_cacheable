@@ -6,15 +6,19 @@
  * @Copyright (c) - <richenlin(at)gmail.com>
  */
 import { IOCContainer } from 'koatty_container';
-import { Helper } from "koatty_lib";
-import { DefaultLogger as logger } from "koatty_logger";
-import { CacheStore } from "koatty_store";
-import { asyncDelayedExecution, generateCacheKey, getArgs, getParamIndex } from './utils';
-import { GetCacheStore, InitCacheStore } from './store';
+
+// Define cache decorator types
+export enum DecoratorType {
+  CACHE_EVICT = "CACHE_EVICT",
+  CACHE_ABLE = "CACHE_ABLE",
+}
+
+// IOC container key constant
+const COMPONENT_CACHE = "COMPONENT_CACHE";
+export const CACHE_METADATA_KEY = "CACHE_METADATA_KEY";
 
 /**
- * @description: 
- * @return {*}
+ * @description: CacheAble decorator options
  */
 export interface CacheAbleOpt {
   // parameter name array
@@ -24,8 +28,7 @@ export interface CacheAbleOpt {
 }
 
 /**
- * @description: 
- * @return {*}
+ * @description: CacheEvict decorator options
  */
 export interface CacheEvictOpt {
   // parameter name array
@@ -62,45 +65,19 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
       throw Error("This decorator only used in the service、component class.");
     }
 
-    const { value, configurable, enumerable } = descriptor;
+    // Save class to IOC container
+    IOCContainer.saveClass(DecoratorType.CACHE_ABLE, target, COMPONENT_CACHE);
+    
+    // Save decorator metadata
     const mergedOpt = { ...{ params: [], timeout: 300 }, ...opt };
+    IOCContainer.attachClassMetadata(COMPONENT_CACHE, CACHE_METADATA_KEY, {
+      cacheName,
+      methodName,
+      options: mergedOpt,
+      type: DecoratorType.CACHE_ABLE
+    }, target);
 
-    // Get the parameter list of the method
-    const funcParams = getArgs((<any>target)[methodName]);
-    // Get the defined parameter location
-    const paramIndexes = getParamIndex(funcParams, mergedOpt.params || []);
-    descriptor = {
-      configurable,
-      enumerable,
-      writable: true,
-      async value(...props: any[]) {
-        const store: CacheStore = await GetCacheStore(this.app).catch((e): any => {
-          logger.error("Get cache store instance failed." + e.message);
-          return null;
-        });
-        if (store) {
-          const key = generateCacheKey(cacheName, paramIndexes, mergedOpt.params, props);
-          const res = await store.get(key).catch((e): any => {
-            logger.error("Cache get error:" + e.message)
-          });
-          if (!Helper.isEmpty(res)) {
-            return JSON.parse(res);
-          }
-          const result = await value.apply(this, props);
-          // async refresh store
-          store.set(key, Helper.isJSONObj(result) ? JSON.stringify(result) : result,
-            mergedOpt.timeout).catch((e): any => {
-              logger.error("Cache set error:" + e.message)
-            });
-          return result;
-        } else {
-          // tslint:disable-next-line: no-invalid-this
-          return value.apply(this, props);
-        }
-      }
-    };
-    // bind app_ready hook event 
-    InitCacheStore();
+    // Return original descriptor without modifying method implementation
     return descriptor;
   };
 }
@@ -129,48 +106,20 @@ export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
     if (!["SERVICE", "COMPONENT"].includes(componentType)) {
       throw Error("This decorator only used in the service、component class.");
     }
-    const { value, configurable, enumerable } = descriptor;
-    opt = { ...{ delayedDoubleDeletion: true, }, ...opt }
-    // Get the parameter list of the method
-    const funcParams = getArgs((<any>target)[methodName]);
-    // Get the defined parameter location
-    const paramIndexes = getParamIndex(funcParams, opt.params || []);
 
-    descriptor = {
-      configurable,
-      enumerable,
-      writable: true,
-      async value(...props: any[]) {
-        const store: CacheStore = await GetCacheStore(this.app).catch((e): any => {
-          logger.error("Get cache store instance failed." + e.message);
-          return null;
-        });
+    // Save class to IOC container
+    IOCContainer.saveClass(DecoratorType.CACHE_EVICT, target, COMPONENT_CACHE);
+    
+    // Save decorator metadata
+    const mergedOpt = { ...{ delayedDoubleDeletion: true }, ...opt };
+    IOCContainer.attachClassMetadata(COMPONENT_CACHE, CACHE_METADATA_KEY, {
+      cacheName,
+      methodName,
+      options: mergedOpt,
+      type: DecoratorType.CACHE_EVICT
+    }, target);
 
-        if (store) {
-          const key = generateCacheKey(cacheName, paramIndexes, opt.params || [], props);
-
-          const result = await value.apply(this, props);
-          store.del(key).catch((e): any => {
-            logger.error("Cache delete error:" + e.message);
-          });
-
-          if (opt.delayedDoubleDeletion) {
-            const delayTime = 5000;
-            asyncDelayedExecution(() => {
-              store.del(key).catch((e): any => {
-                logger.error("Cache double delete error:" + e.message);
-              });
-            }, delayTime);
-          }
-          return result;
-        } else {
-          // If store is not available, execute method directly
-          return value.apply(this, props);
-        }
-      }
-    };
-    // bind app_ready hook event 
-    InitCacheStore();
+    // Return original descriptor without modifying method implementation
     return descriptor;
-  }
+  };
 }
