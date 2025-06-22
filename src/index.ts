@@ -9,7 +9,7 @@
  */
 
 import { Koatty } from "koatty_core";
-import { CacheOptions, injectCache } from "./inject";
+import { CacheOptions, closeCacheStore, injectCache } from "./inject";
 
 export * from "./cache";
 
@@ -36,4 +36,9 @@ export async function KoattyCache(options: CacheOptions, app: Koatty) {
   options = { ...defaultOptions, ...options };
   // inject cache decorator
   await injectCache(options, app);
+  
+  // Register cleanup on app stop
+  app.on('appStop', async () => {
+    await closeCacheStore(app);
+  });
 }

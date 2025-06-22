@@ -21,7 +21,7 @@ export class CacheManager {
     return CacheManager.instance;
   }
 
-  setCacheStore(store: CacheStore): void {
+  setCacheStore(store: CacheStore | null): void {
     this.cacheStore = store;
   }
 

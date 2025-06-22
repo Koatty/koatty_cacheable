@@ -84,33 +84,3 @@ export async function closeCacheStore(_app: Koatty) {
   }
 }
 
-/**
- * KoattyCache plugin
- * @param options Cache configuration options
- * @returns Plugin function
- */
-export function KoattyCache(options: CacheOptions = {}) {
-  return async function (app: Koatty, next: () => void) {
-    // Set default configuration
-    const defaultOptions: CacheOptions = {
-      cacheTimeout: 300,
-      delayedDoubleDeletion: true,
-      ...options
-    };
-
-    try {
-      // Initialize cache system
-      await injectCache(defaultOptions, app);
-      
-      // Register cleanup on app shutdown
-      app.on('appStop', async () => {
-        await closeCacheStore(app);
-      });
-
-      next();
-    } catch (error) {
-      logger.Error('KoattyCache plugin initialization failed:', error);
-      next();
-    }
-  };
-}
