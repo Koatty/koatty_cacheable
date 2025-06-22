@@ -1,8 +1,8 @@
 # koatty_cacheable
 
-Cacheable for koatty.
+Cacheable plugin for Koatty.
 
-Koatty框架的 CacheAble, CacheEvict 缓存装饰器支持库，提供方法级别的缓存功能。
+Koatty框架的 CacheAble, CacheEvict 缓存装饰器插件，提供方法级别的缓存功能。
 
 ## 特性
 
@@ -13,6 +13,7 @@ Koatty框架的 CacheAble, CacheEvict 缓存装饰器支持库，提供方法级
 - 🔧 **多后端支持**: 支持 Memory 和 Redis 缓存后端
 - 🎯 **参数化缓存**: 支持基于方法参数的缓存键生成
 - 🛡️ **类型安全**: 完整的 TypeScript 支持
+- 📦 **插件化设计**: 遵循 Koatty 插件标准，统一管理
 
 ## 安装
 
@@ -22,28 +23,48 @@ npm install koatty_cacheable
 
 ## 配置
 
-在 koatty 项目的 `db.ts` 配置文件中添加缓存配置：
+### 1. Generate Plugin Template
+
+Use Koatty CLI to generate the plugin template:
+
+```bash
+kt plugin Cacheable
+```
+
+Create `src/plugin/Cacheable.ts`:
+
+```typescript
+import { Plugin, IPlugin, App } from "koatty";
+import { KoattyCache } from "koatty_cacheable";
+
+@Plugin()
+export class Cacheable implements IPlugin {
+  run(options: any, app: App) {
+    return KoattyCache(options, app);
+  }
+}
+```
+
+### 2. Configure Plugin
+
+Update `src/config/plugin.ts`:
 
 ```typescript
 export default {
-    // ... 其他配置
-
-    "CacheStore": {
-        type: "memory", // 缓存类型: "redis" 或 "memory"，默认为 "memory"
-        // Redis 配置 (当 type 为 "redis" 时)
-        // key_prefix: "koatty",
-        // host: '127.0.0.1',
-        // port: 6379,
-        // name: "",
-        // username: "",
-        // password: "",
-        // db: 0,
-        // timeout: 30,
-        // pool_size: 10,
-        // conn_timeout: 30
-    },
-
-    // ... 其他配置
+  list: ["Cacheable"], // Plugin loading order
+  config: {
+    Cacheable: {
+      cacheTimeout: 300,        // 默认缓存过期时间（秒）
+      delayedDoubleDeletion: true, // 默认启用延迟双删策略
+      redisConfig: {
+        host: "127.0.0.1",
+        port: 6379,
+        password: "",
+        db: 0,
+        keyPrefix: "koatty:cache:"
+      }
+    }
+  }
 };
 ```
 
@@ -53,13 +74,15 @@ export default {
 
 ```typescript
 import { CacheAble, CacheEvict, GetCacheStore } from "koatty_cacheable";
+import { Component } from "koatty_container";
 
+@Component()
 export class UserService {
 
     // 自动缓存方法返回值
     @CacheAble("userCache", {
         params: ["id"],    // 使用 id 参数作为缓存键的一部分
-        timeout: 300       // 缓存过期时间（秒），默认 300 秒
+        timeout: 300       // 缓存过期时间（秒），默认使用插件配置的 cacheTimeout
     })
     async getUserById(id: string): Promise<User> {
         // 数据库查询逻辑
@@ -69,7 +92,7 @@ export class UserService {
     // 自动清除相关缓存
     @CacheEvict("userCache", {
         params: ["id"],                    // 使用 id 参数定位要清除的缓存
-        delayedDoubleDeletion: true        // 启用延迟双删策略，默认 true
+        delayedDoubleDeletion: true        // 启用延迟双删策略，默认使用插件配置的 delayedDoubleDeletion
     })
     async updateUser(id: string, userData: Partial<User>): Promise<User> {
         // 更新用户数据
@@ -96,6 +119,9 @@ export class UserService {
 ### 高级用法
 
 ```typescript
+import { Component } from "koatty_container";
+
+@Component()
 export class ProductService {
 
     // 无参数缓存
@@ -107,7 +133,7 @@ export class ProductService {
     // 多参数缓存
     @CacheAble("productSearch", {
         params: ["category", "keyword"],
-        timeout: 600
+        timeout: 600  // 覆盖插件配置的默认时间
     })
     async searchProducts(category: string, keyword: string, page: number = 1): Promise<Product[]> {
         return await this.productRepository.search(category, keyword, page);
@@ -116,7 +142,7 @@ export class ProductService {
     // 立即清除缓存（不使用延迟双删）
     @CacheEvict("productSearch", {
         params: ["category"],
-        delayedDoubleDeletion: false
+        delayedDoubleDeletion: false  // 覆盖插件配置的默认策略
     })
     async updateProductCategory(category: string, updates: any): Promise<void> {
         await this.productRepository.updateCategory(category, updates);
@@ -176,12 +202,35 @@ export class ProductService {
 
 这样可以避免在并发场景下出现脏数据。
 
+## 配置优先级
+
+配置项的优先级从高到低：
+
+1. **装饰器配置**: 直接在 `@CacheAble` 或 `@CacheEvict` 中指定的选项
+2. **插件配置**: 在 `src/config/plugin.ts` 中配置的 `Cacheable` 插件选项
+3. **默认值**: 系统内置的默认配置
+
+例如：
+```typescript
+// 插件配置
+Cacheable: {
+  cacheTimeout: 300,
+  delayedDoubleDeletion: true
+}
+
+// 装饰器配置会覆盖插件配置
+@CacheAble("user", {
+  timeout: 600  // 使用 600 秒而不是插件配置的 300 秒
+})
+```
+
 ## 注意事项
 
-1. 装饰器只能用于 `SERVICE` 和 `COMPONENT` 类型的类
+1. 装饰器只能用于使用了 `@Component()` 装饰器的类
 2. 被装饰的方法必须是异步方法（返回 Promise）
 3. 缓存的数据会自动进行 JSON 序列化/反序列化
 4. 如果缓存服务不可用，方法会正常执行，不会抛出错误
+5. 插件会在应用启动时自动注入缓存功能到所有使用装饰器的方法
 
 ## 许可证
 
