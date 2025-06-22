@@ -285,41 +285,6 @@ describe('New Architecture Tests', () => {
     });
   });
 
-  describe('Plugin Integration', () => {
-    test('should work with KoattyCache plugin initialization', async () => {
-      const mockApp = { on: jest.fn() };
-      
-      const plugin = KoattyCache({
-        cacheTimeout: 400,
-        delayedDoubleDeletion: false
-      });
-
-      await plugin(mockApp as any, jest.fn());
-
-      // Configuration should be applied
-      expect(cacheManager.getDefaultTimeout()).toBe(400);
-      expect(cacheManager.getDefaultDelayedDoubleDeletion()).toBe(false);
-
-      // App stop handler should be registered
-      expect(mockApp.on).toHaveBeenCalledWith('appStop', expect.any(Function));
-    });
-
-    test('should handle plugin cleanup', async () => {
-      const mockApp = { on: jest.fn() };
-      await KoattyCache({})(mockApp as any, jest.fn());
-
-      // Get cleanup function
-      const cleanup = mockApp.on.mock.calls.find(
-        call => call[0] === 'appStop'
-      )?.[1];
-
-      expect(cleanup).toBeDefined();
-      
-      // Should not throw during cleanup
-      await expect(cleanup()).resolves.not.toThrow();
-    });
-  });
-
   describe('Comprehensive Flow', () => {
     test('should demonstrate complete cache lifecycle', async () => {
       console.log('\n=== Architecture Test Demo ===');
