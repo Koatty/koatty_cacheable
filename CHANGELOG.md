@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0](https://github.com/thinkkoa/koatty_cacheable/compare/v1.6.1...v2.0.0) (2025-06-22)
+
+
+### Features
+
+* enhance cache decorators to support both global and decorator-specific options ([1e70a64](https://github.com/thinkkoa/koatty_cacheable/commit/1e70a64b099e44c8f89180d501899c7e90d83264))
+* implement CacheAble and CacheEvict decorators with unified injection system ([621c02c](https://github.com/thinkkoa/koatty_cacheable/commit/621c02c89596ccca61619ccd603e1868b38b6764))
+
 ### [1.6.1](https://github.com/thinkkoa/koatty_cacheable/compare/v1.6.0...v1.6.1) (2025-06-09)
 
 ## [1.6.0](https://github.com/thinkkoa/koatty_cacheable/compare/v1.5.0...v1.6.0) (2024-11-07)

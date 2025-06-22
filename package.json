@@ -1,6 +1,6 @@
 {
   "name": "koatty_cacheable",
-  "version": "1.6.1",
+  "version": "2.0.0",
   "description": "Cacheable for koatty.",
   "scripts": {
     "build": "npm run build:js && npm run build:dts && npm run build:doc && npm run build:cp",
@@ -67,6 +67,7 @@
     "@types/koa": "^2.x.x",
     "@types/lodash": "^4.x.x",
     "@types/node": "^22.x.x",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.x.x",
     "@typescript-eslint/parser": "^8.x.x",
     "conventional-changelog-cli": "^5.x.x",
