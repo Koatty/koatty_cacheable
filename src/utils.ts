@@ -25,8 +25,11 @@ export function getArgs(func: (...args: any[]) => any): string[] {
     if (args && args.length > 1) {
       // Split parameters into array and clean them
       return args[1].split(",").map(function (a) {
-        // Remove inline comments and whitespace
-        return a.replace(/\/\*.*\*\//, "").trim();
+        // Remove multi-line comments /* ... */ and single-line comments //
+        const param = a.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "").trim();
+        // Extract parameter name (before : or = or end of string)
+        const match = param.match(/^(\w+)/);
+        return match ? match[1] : "";
       }).filter(function (ae) {
         // Filter out empty strings
         return ae;

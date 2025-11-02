@@ -7,12 +7,9 @@
  * @License: BSD (3-Clause)
  * @Copyright (c): <richenlin(at)gmail.com>
  */
-import { Application, IOCContainer } from "koatty_container";
 import { Helper } from "koatty_lib";
 import { DefaultLogger as logger } from "koatty_logger";
 import { CacheStore, StoreOptions } from "koatty_store";
-
-
 
 /**
  * 
@@ -28,68 +25,79 @@ const storeCache: CacheStoreInterface = {
   store: null
 };
 
+// Promise to track initialization in progress
+let initPromise: Promise<CacheStore> | null = null;
+
 /**
  * get instances of storeCache
  *
  * @export
- * @param {Application} app
+ * @param {StoreOptions} options
  * @returns {*}  {CacheStore}
  */
-export async function GetCacheStore(app?: Application): Promise<CacheStore> {
+export async function GetCacheStore(options?: StoreOptions): Promise<CacheStore> {
+  // Return existing store if available
   if (storeCache.store && storeCache.store.getConnection) {
     return storeCache.store;
   }
-  let opt: StoreOptions = {
-    type: "memory",
-    db: 0,
-    timeout: 30
-  };
-  if (app && Helper.isFunction(app.config)) {
-    opt = app.config("CacheStore") || app.config("CacheStore", "db");
-    if (Helper.isEmpty(opt)) {
-      logger.Warn(`Missing CacheStore server configuration. Please write a configuration item with the key name 'CacheStore' in the db.ts file.`);
+
+  // If initialization is in progress, wait for it
+  if (initPromise) {
+    return initPromise;
+  }
+
+  if (Helper.isEmpty(options)) {
+    if (!storeCache.store) {
+      logger.Warn(`CacheStore not initialized. Please call KoattyCached() first with proper options in your application startup.`);
     }
+    return storeCache.store || null;
   }
 
-  storeCache.store = CacheStore.getInstance(opt);
-  if (!Helper.isFunction(storeCache.store.getConnection)) {
-    throw Error(`CacheStore connection failed. `);
-  }
-  await storeCache.store.client.getConnection();
-  return storeCache.store;
-}
+  // Start initialization and track it
+  initPromise = (async () => {
+    try {
+      storeCache.store = CacheStore.getInstance(options);
+      if (!Helper.isFunction(storeCache.store.getConnection)) {
+        throw Error(`CacheStore connection failed. `);
+      }
+      await storeCache.store.client.getConnection();
+      return storeCache.store;
+    } finally {
+      // Clear init promise after completion
+      initPromise = null;
+    }
+  })();
 
-/**
- * initiation CacheStore connection and client.
- *
- */
-export async function InitCacheStore() {
-  if (storeCache.store) {
-    return;
-  }
-
-  const app = IOCContainer.getApp();
-  app?.once("appReady", async () => {
-    await GetCacheStore(app);
-  });
+  return initPromise;
 }
 
 /**
  * Close cache store connection for cleanup (mainly for testing)
  */
 export async function CloseCacheStore(): Promise<void> {
-  if (storeCache.store && storeCache.store.client) {
+  if (storeCache.store) {
     try {
-      const client = storeCache.store.client as any;
-      if (typeof client.quit === 'function') {
-        await client.quit();
-      } else if (typeof client.close === 'function') {
-        await client.close();
+      if (storeCache.store.client) {
+        const client = storeCache.store.client as any;
+        if (typeof client.quit === 'function') {
+          await client.quit();
+        } else if (typeof client.close === 'function') {
+          await client.close();
+        }
       }
     } catch {
       // Ignore cleanup errors
-    } finally {
-      storeCache.store = null;
     }
   }
+  
+  // Clear the CacheStore singleton instance
+  try {
+    await CacheStore.clearAllInstances();
+  } catch {
+    // Ignore cleanup errors
+  }
+  
+  // Always clear the cache
+  storeCache.store = null;
+  initPromise = null;
 }
