@@ -24,4 +24,41 @@ export class TestClass {
   run2(name: string, age: number) {
     return "234";
   }
+
+  @CacheEvict("delayed", {
+    params: ["id"],
+    delayedDoubleDeletion: true,
+    delayTime: 2000
+  })
+  runDelayed(id: string) {
+    return "delayed";
+  }
+
+  @CacheAble("concurrent", {
+    params: ["id"]
+  })
+  async runConcurrent(id: string) {
+    // 模拟异步操作
+    await new Promise(resolve => setTimeout(resolve, 100));
+    return `result-${id}`;
+  }
+
+  @CacheAble("edge", {
+    params: ["key"]
+  })
+  runEdgeCase(key: string) {
+    return `edge-${key}`;
+  }
+
+  @CacheAble("noparams")
+  runNoParams() {
+    return "no-params";
+  }
+
+  @CacheAble("invalid", {
+    params: ["nonExistentParam"]
+  })
+  runWithInvalidParam(realParam: string) {
+    return `invalid-${realParam}`;
+  }
 }

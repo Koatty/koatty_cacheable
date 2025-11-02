@@ -9,6 +9,9 @@ module.exports = {
     'scope-enum': [0], // 不校验scope类型
     'scope-empty': [0], // 不校验scope是否设置
     'subject-case': [0], // 不校验描述的字符格式
-    // 'subject-min-length': [2, 'always', 5], // 描述至少5个字符
+    'subject-min-length': [2, 'always', 2], // 描述至少5个字符
+    'body-max-line-length': [0], // 不校验body的最大行长度
+    'footer-max-line-length': [0], // 不校验footer的最大行长度
+    'header-max-length': [0], // 不校验header的最大长度
   },
 };

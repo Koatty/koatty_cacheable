@@ -20,32 +20,60 @@ Koatty框架的 CacheAble, CacheEvict 缓存装饰器支持库，提供方法级
 npm install koatty_cacheable
 ```
 
-## 配置
+## 快速开始
 
-在 koatty 项目的 `db.ts` 配置文件中添加缓存配置：
+### 1. 生成插件模板
+
+使用 Koatty CLI 生成插件模板：
+
+```bash
+kt plugin Cacheable
+```
+
+创建 `src/plugin/Cacheable.ts`：
+
+```typescript
+import { Plugin, IPlugin, App } from "koatty";
+import { KoattyCached } from "koatty_cacheable";
+
+@Plugin()
+export class Cacheable implements IPlugin {
+  run(options: any, app: App) {
+    return KoattyCached(options, app);
+  }
+}
+```
+
+### 2. 配置插件
+
+更新 `src/config/plugin.ts`：
 
 ```typescript
 export default {
-    // ... 其他配置
-
-    "CacheStore": {
-        type: "memory", // 缓存类型: "redis" 或 "memory"，默认为 "memory"
-        // Redis 配置 (当 type 为 "redis" 时)
-        // key_prefix: "koatty",
-        // host: '127.0.0.1',
-        // port: 6379,
-        // name: "",
-        // username: "",
-        // password: "",
-        // db: 0,
-        // timeout: 30,
-        // pool_size: 10,
-        // conn_timeout: 30
-    },
-
-    // ... 其他配置
+  list: ["Cacheable"], // 插件加载顺序
+  config: {
+    Cacheable: {
+      type: "memory", // 缓存类型: "redis" 或 "memory"，默认为 "memory"
+      db: 0,
+      timeout: 30,
+      // Redis 配置 (当 type 为 "redis" 时)
+      // key_prefix: "koatty",
+      // host: '127.0.0.1',
+      // port: 6379,
+      // name: "",
+      // username: "",
+      // password: "",
+      // pool_size: 10,
+      // conn_timeout: 30
+    }
+  }
 };
 ```
+
+**注意事项**:
+- 插件会在应用启动时自动初始化缓存
+- 必须在插件配置中提供正确的缓存配置
+- 如果缓存未正确初始化，装饰器方法会直接执行而不进行缓存（优雅降级）
 
 ## 使用方法
 
@@ -178,10 +206,12 @@ export class ProductService {
 
 ## 注意事项
 
-1. 装饰器只能用于 `SERVICE` 和 `COMPONENT` 类型的类
-2. 被装饰的方法必须是异步方法（返回 Promise）
-3. 缓存的数据会自动进行 JSON 序列化/反序列化
-4. 如果缓存服务不可用，方法会正常执行，不会抛出错误
+1. **初始化顺序**: 必须先调用 `KoattyCached()` 初始化缓存，然后再使用装饰器。建议在应用启动时（如 `init()` 方法中）进行初始化
+2. 装饰器只能用于 `SERVICE` 和 `COMPONENT` 类型的类
+3. 被装饰的方法必须是异步方法（返回 Promise）
+4. 缓存的数据会自动进行 JSON 序列化/反序列化
+5. 如果缓存服务不可用，方法会正常执行，不会抛出错误（优雅降级）
+6. 缓存键长度超过 128 字符时会自动使用 murmur hash 进行压缩
 
 ## 许可证
 
