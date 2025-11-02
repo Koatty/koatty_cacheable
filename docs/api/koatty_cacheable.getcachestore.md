@@ -10,14 +10,14 @@ get instances of storeCache
 **Signature:**
 
 ```typescript
-export declare function GetCacheStore(app?: Application): Promise<CacheStore>;
+export declare function GetCacheStore(options?: StoreOptions): Promise<CacheStore>;
 ```
 
 ## Parameters
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  app | Application | _(Optional)_ |
+|  options | StoreOptions | _(Optional)_ |
 
 **Returns:**
 

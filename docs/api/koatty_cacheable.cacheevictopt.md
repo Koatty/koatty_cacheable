@@ -17,5 +17,6 @@ export interface CacheEvictOpt
 |  Property | Modifiers | Type | Description |
 |  --- | --- | --- | --- |
 |  [delayedDoubleDeletion?](./koatty_cacheable.cacheevictopt.delayeddoubledeletion.md) |  | boolean | _(Optional)_ |
+|  [delayTime?](./koatty_cacheable.cacheevictopt.delaytime.md) |  | number | _(Optional)_ |
 |  [params?](./koatty_cacheable.cacheevictopt.params.md) |  | string\[\] | _(Optional)_ |
 
