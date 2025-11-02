@@ -94,17 +94,17 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
         });
         if (store) {
           const key = generateCacheKey(cacheName, paramIndexes, mergedOpt.params, props);
-          const res = await store.get(key).catch((e: Error): undefined => {
-            logger.error("Cache get error:" + e.message)
+          const res = await store.get(key).catch((e: Error) => {
+            logger.error("Cache get error:" + e.message);
           });
           if (!Helper.isEmpty(res)) {
             try {
-              return JSON.parse(res);
+              return JSON.parse(res as string);
             } catch (e) {
               const error = e as Error;
               logger.error("Cache JSON parse error:" + error.message);
               // 如果解析失败，删除损坏的缓存，重新执行方法
-              store.del(key).catch((err: Error): undefined => {
+              store.del(key).catch((err: Error) => {
                 logger.error("Cache del error after parse failure:" + err.message);
               });
             }
@@ -112,8 +112,8 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
           const result = await value.apply(this, props);
           // async refresh store
           store.set(key, Helper.isJSONObj(result) ? JSON.stringify(result) : result,
-            mergedOpt.timeout).catch((e: Error): undefined => {
-              logger.error("Cache set error:" + e.message)
+            mergedOpt.timeout).catch((e: Error) => {
+              logger.error("Cache set error:" + e.message);
             });
           return result;
         } else {
@@ -182,14 +182,14 @@ export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
           const key = generateCacheKey(cacheName, paramIndexes, opt.params || [], props);
 
           const result = await value.apply(this, props);
-          store.del(key).catch((e: Error): undefined => {
+          store.del(key).catch((e: Error) => {
             logger.error("Cache delete error:" + e.message);
           });
 
           if (opt.delayedDoubleDeletion) {
             const delayTime = opt.delayTime || 5000;
             asyncDelayedExecution(() => {
-              store.del(key).catch((e: Error): undefined => {
+              store.del(key).catch((e: Error) => {
                 logger.error("Cache double delete error:" + e.message);
               });
             }, delayTime);
