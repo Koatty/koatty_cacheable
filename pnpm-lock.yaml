@@ -12,8 +12,8 @@ importers:
         specifier: ^1.x.x
         version: 1.8.10(koatty_lib@1.3.4)(koatty_logger@2.1.4(koatty_lib@1.3.4)(tslib@2.6.2))(reflect-metadata@0.2.1)(tslib@2.6.2)
       koatty_core:
-        specifier: 2.0.8-0
-        version: 2.0.8-0(koa@3.1.1)(koatty_container@1.8.10(koatty_lib@1.3.4)(koatty_logger@2.1.4(koatty_lib@1.3.4)(tslib@2.6.2))(reflect-metadata@0.2.1)(tslib@2.6.2))(koatty_lib@1.3.4)(koatty_logger@2.1.4(koatty_lib@1.3.4)(tslib@2.6.2))
+        specifier: 2.x.x
+        version: 2.0.8(koa@3.1.1)(koatty_container@1.8.10(koatty_lib@1.3.4)(koatty_logger@2.1.4(koatty_lib@1.3.4)(tslib@2.6.2))(reflect-metadata@0.2.1)(tslib@2.6.2))(koatty_lib@1.3.4)(koatty_logger@2.1.4(koatty_lib@1.3.4)(tslib@2.6.2))
       koatty_lib:
         specifier: ^1.x.x
         version: 1.3.4
@@ -21,7 +21,7 @@ importers:
         specifier: ^2.x.x
         version: 2.1.4(koatty_lib@1.3.4)(tslib@2.6.2)
       koatty_store:
-        specifier: ^1.9.0
+        specifier: ^1.x.x
         version: 1.9.0(koatty_lib@1.3.4)(koatty_logger@2.1.4(koatty_lib@1.3.4)(tslib@2.6.2))
     devDependencies:
       '@commitlint/cli':
@@ -2229,8 +2229,8 @@ packages:
       reflect-metadata: ^0.x.x
       tslib: ^2.x.x
 
-  koatty_core@2.0.8-0:
-    resolution: {integrity: sha512-GuuTOgQpNoasTtit+sVAyM2N3Dv3vgyBaiYLOBlqyuSiM8ErWOlv/FFwEjm62Wfw6gvfc4XcV31VqccwMPVPhg==}
+  koatty_core@2.0.8:
+    resolution: {integrity: sha512-Ar+S8G33vlsExTo1pTv3nuN1bW0HMOFTEl5SdphG2dB5ZrW9ToyLq5zLGY/oMSUES2G+X+kTgeL7dtaYgzbUxQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       koa: ^2.16.0 || ^3.0.0
@@ -5889,7 +5889,7 @@ snapshots:
       reflect-metadata: 0.2.1
       tslib: 2.6.2
 
-  koatty_core@2.0.8-0(koa@3.1.1)(koatty_container@1.8.10(koatty_lib@1.3.4)(koatty_logger@2.1.4(koatty_lib@1.3.4)(tslib@2.6.2))(reflect-metadata@0.2.1)(tslib@2.6.2))(koatty_lib@1.3.4)(koatty_logger@2.1.4(koatty_lib@1.3.4)(tslib@2.6.2)):
+  koatty_core@2.0.8(koa@3.1.1)(koatty_container@1.8.10(koatty_lib@1.3.4)(koatty_logger@2.1.4(koatty_lib@1.3.4)(tslib@2.6.2))(reflect-metadata@0.2.1)(tslib@2.6.2))(koatty_lib@1.3.4)(koatty_logger@2.1.4(koatty_lib@1.3.4)(tslib@2.6.2)):
     dependencies:
       koa: 3.1.1
       koa-compose: 4.1.0
