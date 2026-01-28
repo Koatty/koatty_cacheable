@@ -1,13 +1,13 @@
 {
   "name": "koatty_cacheable",
-  "version": "2.0.3",
+  "version": "2.0.5",
   "description": "Cacheable for koatty.",
   "scripts": {
     "build": "npm run build:js && npm run build:dts && npm run build:doc && npm run build:cp",
     "build:cp": "node scripts/postBuild && copyfiles package.json LICENSE README.md dist/",
     "build:js": "npx rollup --bundleConfigAsCjs -c .rollup.config.js",
     "build:doc": "npx api-documenter markdown --input temp --output docs/api",
-    "build:dts": "npx tsc && npx api-extractor run --local --verbose",
+    "build:dts": "bash ../../scripts/build-dts.sh",
     "eslint": "eslint --ext .ts,.js ./",
     "lock": "npm i --package-lock-only && npm audit fix && npx pnpm i",
     "prepublishOnly": "npm test && npm run build",
@@ -82,17 +82,17 @@
     "typescript": "^5.x.x"
   },
   "dependencies": {
-    "koatty_container": "workspace:*",
-    "koatty_core": "workspace:*",
-    "koatty_lib": "workspace:*",
-    "koatty_logger": "workspace:*",
-    "koatty_store": "workspace:*"
+    "koatty_container": "^1.17.4",
+    "koatty_core": "^2.0.14",
+    "koatty_lib": "^1.4.5",
+    "koatty_logger": "^2.3.4",
+    "koatty_store": "^1.9.4"
   },
   "peerDependencies": {
-    "koatty_container": "workspace:*",
-    "koatty_core": "workspace:*",
-    "koatty_lib": "workspace:*",
-    "koatty_logger": "workspace:*",
-    "koatty_store": "workspace:*"
+    "koatty_container": "^1.17.4",
+    "koatty_core": "^2.0.14",
+    "koatty_lib": "^1.4.5",
+    "koatty_logger": "^2.3.4",
+    "koatty_store": "^1.9.4"
   }
 }
