@@ -6,18 +6,109 @@
 
 ## Functions
 
-|  Function | Description |
-|  --- | --- |
-|  [CacheAble(cacheName, opt)](./koatty_cacheable.cacheable.md) | <p>Decorate this method to support caching. The cache method returns a value to ensure that the next time the method is executed with the same parameters, the results can be obtained directly from the cache without the need to execute the method again. CacheStore server config defined in db.ts.</p> |
-|  [CacheEvict(cacheName, opt)](./koatty_cacheable.cacheevict.md) | <p>Decorating the execution of this method will trigger a cache clear operation. CacheStore server config defined in db.ts.</p> |
-|  [CloseCacheStore()](./koatty_cacheable.closecachestore.md) | Close cache store connection for cleanup (mainly for testing) |
-|  [GetCacheStore(options)](./koatty_cacheable.getcachestore.md) | <p>get instances of storeCache</p> |
-|  [KoattyCached(options, app)](./koatty_cacheable.koattycached.md) |  |
+<table><thead><tr><th>
+
+Function
+
+
+</th><th>
+
+Description
+
+
+</th></tr></thead>
+<tbody><tr><td>
+
+[CacheAble(cacheName, opt)](./koatty_cacheable.cacheable.md)
+
+
+</td><td>
+
+Decorate this method to support caching. The cache method returns a value to ensure that the next time the method is executed with the same parameters, the results can be obtained directly from the cache without the need to execute the method again. CacheStore server config defined in db.ts.
+
+
+
+</td></tr>
+<tr><td>
+
+[CacheEvict(cacheName, opt)](./koatty_cacheable.cacheevict.md)
+
+
+</td><td>
+
+Decorating the execution of this method will trigger a cache clear operation. CacheStore server config defined in db.ts.
+
+
+
+</td></tr>
+<tr><td>
+
+[CloseCacheStore()](./koatty_cacheable.closecachestore.md)
+
+
+</td><td>
+
+Close cache store connection for cleanup (mainly for testing)
+
+
+</td></tr>
+<tr><td>
+
+[GetCacheStore(options)](./koatty_cacheable.getcachestore.md)
+
+
+</td><td>
+
+get instances of storeCache
+
+
+
+</td></tr>
+<tr><td>
+
+[KoattyCached(options, app)](./koatty_cacheable.koattycached.md)
+
+
+</td><td>
+
+
+</td></tr>
+</tbody></table>
 
 ## Interfaces
 
-|  Interface | Description |
-|  --- | --- |
-|  [CacheAbleOpt](./koatty_cacheable.cacheableopt.md) | @<!-- -->description:  {<!-- -->\*<!-- -->} |
-|  [CacheEvictOpt](./koatty_cacheable.cacheevictopt.md) | @<!-- -->description:  {<!-- -->\*<!-- -->} |
+<table><thead><tr><th>
+
+Interface
+
+
+</th><th>
+
+Description
+
+
+</th></tr></thead>
+<tbody><tr><td>
+
+[CacheAbleOpt](./koatty_cacheable.cacheableopt.md)
+
+
+</td><td>
+
+@<!-- -->description:  {<!-- -->\*<!-- -->}
+
+
+</td></tr>
+<tr><td>
+
+[CacheEvictOpt](./koatty_cacheable.cacheevictopt.md)
+
+
+</td><td>
+
+@<!-- -->description:  {<!-- -->\*<!-- -->}
+
+
+</td></tr>
+</tbody></table>
 

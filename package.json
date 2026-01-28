@@ -4,7 +4,7 @@
   "description": "Cacheable for koatty.",
   "scripts": {
     "build": "npm run build:js && npm run build:dts && npm run build:doc && npm run build:cp",
-    "build:cp": "node scripts/postBuild && npx copyfiles package.json LICENSE README.md dist/",
+    "build:cp": "node scripts/postBuild && copyfiles package.json LICENSE README.md dist/",
     "build:js": "npx rollup --bundleConfigAsCjs -c .rollup.config.js",
     "build:doc": "npx api-documenter markdown --input temp --output docs/api",
     "build:dts": "npx tsc && npx api-extractor run --local --verbose",
@@ -70,6 +70,7 @@
     "@typescript-eslint/eslint-plugin": "^8.x.x",
     "@typescript-eslint/parser": "^8.x.x",
     "conventional-changelog-cli": "^5.x.x",
+    "copyfiles": "^2.x.x",
     "eslint": "^8.x.x",
     "eslint-plugin-jest": "^28.x.x",
     "husky": "^4.x.x",

@@ -14,9 +14,83 @@ export interface CacheEvictOpt
 
 ## Properties
 
-|  Property | Modifiers | Type | Description |
-|  --- | --- | --- | --- |
-|  [delayedDoubleDeletion?](./koatty_cacheable.cacheevictopt.delayeddoubledeletion.md) |  | boolean | _(Optional)_ |
-|  [delayTime?](./koatty_cacheable.cacheevictopt.delaytime.md) |  | number | _(Optional)_ |
-|  [params?](./koatty_cacheable.cacheevictopt.params.md) |  | string\[\] | _(Optional)_ |
+<table><thead><tr><th>
+
+Property
+
+
+</th><th>
+
+Modifiers
+
+
+</th><th>
+
+Type
+
+
+</th><th>
+
+Description
+
+
+</th></tr></thead>
+<tbody><tr><td>
+
+[delayedDoubleDeletion?](./koatty_cacheable.cacheevictopt.delayeddoubledeletion.md)
+
+
+</td><td>
+
+
+</td><td>
+
+boolean
+
+
+</td><td>
+
+_(Optional)_
+
+
+</td></tr>
+<tr><td>
+
+[delayTime?](./koatty_cacheable.cacheevictopt.delaytime.md)
+
+
+</td><td>
+
+
+</td><td>
+
+number
+
+
+</td><td>
+
+_(Optional)_
+
+
+</td></tr>
+<tr><td>
+
+[params?](./koatty_cacheable.cacheevictopt.params.md)
+
+
+</td><td>
+
+
+</td><td>
+
+string\[\]
+
+
+</td><td>
+
+_(Optional)_
+
+
+</td></tr>
+</tbody></table>
 

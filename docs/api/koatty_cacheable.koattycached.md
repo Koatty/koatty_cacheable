@@ -12,10 +12,55 @@ export declare function KoattyCached(options: StoreOptions, app: Koatty): Promis
 
 ## Parameters
 
-|  Parameter | Type | Description |
-|  --- | --- | --- |
-|  options | StoreOptions | The options for the cached options |
-|  app | Koatty | The Koatty application instance |
+<table><thead><tr><th>
+
+Parameter
+
+
+</th><th>
+
+Type
+
+
+</th><th>
+
+Description
+
+
+</th></tr></thead>
+<tbody><tr><td>
+
+options
+
+
+</td><td>
+
+StoreOptions
+
+
+</td><td>
+
+The options for the cached options
+
+
+</td></tr>
+<tr><td>
+
+app
+
+
+</td><td>
+
+Koatty
+
+
+</td><td>
+
+The Koatty application instance
+
+
+</td></tr>
+</tbody></table>
 
 **Returns:**
 

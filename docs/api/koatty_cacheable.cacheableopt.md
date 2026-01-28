@@ -14,8 +14,64 @@ export interface CacheAbleOpt
 
 ## Properties
 
-|  Property | Modifiers | Type | Description |
-|  --- | --- | --- | --- |
-|  [params?](./koatty_cacheable.cacheableopt.params.md) |  | string\[\] | _(Optional)_ |
-|  [timeout?](./koatty_cacheable.cacheableopt.timeout.md) |  | number | _(Optional)_ |
+<table><thead><tr><th>
+
+Property
+
+
+</th><th>
+
+Modifiers
+
+
+</th><th>
+
+Type
+
+
+</th><th>
+
+Description
+
+
+</th></tr></thead>
+<tbody><tr><td>
+
+[params?](./koatty_cacheable.cacheableopt.params.md)
+
+
+</td><td>
+
+
+</td><td>
+
+string\[\]
+
+
+</td><td>
+
+_(Optional)_
+
+
+</td></tr>
+<tr><td>
+
+[timeout?](./koatty_cacheable.cacheableopt.timeout.md)
+
+
+</td><td>
+
+
+</td><td>
+
+number
+
+
+</td><td>
+
+_(Optional)_
+
+
+</td></tr>
+</tbody></table>
 

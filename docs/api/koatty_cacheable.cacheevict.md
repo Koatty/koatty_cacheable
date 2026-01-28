@@ -15,10 +15,55 @@ export declare function CacheEvict(cacheName: string, opt?: CacheEvictOpt): (tar
 
 ## Parameters
 
-|  Parameter | Type | Description |
-|  --- | --- | --- |
-|  cacheName | string | cacheName cache name |
-|  opt | [CacheEvictOpt](./koatty_cacheable.cacheevictopt.md) | _(Optional)_ cache options e.g: { params: \["id"\], delayedDoubleDeletion: true } Use the 'id' parameters of the method as cache subkeys, and clear the cache after the method executed |
+<table><thead><tr><th>
+
+Parameter
+
+
+</th><th>
+
+Type
+
+
+</th><th>
+
+Description
+
+
+</th></tr></thead>
+<tbody><tr><td>
+
+cacheName
+
+
+</td><td>
+
+string
+
+
+</td><td>
+
+cacheName cache name
+
+
+</td></tr>
+<tr><td>
+
+opt
+
+
+</td><td>
+
+[CacheEvictOpt](./koatty_cacheable.cacheevictopt.md)
+
+
+</td><td>
+
+_(Optional)_ cache options e.g: { params: \["id"\], delayedDoubleDeletion: true } Use the 'id' parameters of the method as cache subkeys, and clear the cache after the method executed
+
+
+</td></tr>
+</tbody></table>
 
 **Returns:**
 
