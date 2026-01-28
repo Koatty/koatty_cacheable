@@ -1,6 +1,6 @@
 {
   "name": "koatty_cacheable",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Cacheable for koatty.",
   "scripts": {
     "build": "npm run build:js && npm run build:dts && npm run build:doc && npm run build:cp",
@@ -12,13 +12,8 @@
     "lock": "npm i --package-lock-only && npm audit fix && npx pnpm i",
     "prepublishOnly": "npm test && npm run build && git push --follow-tags origin",
     "prerelease": "npm test && npm run build",
-    "release": "standard-version",
-    "release:pre": "npm run release -- --prerelease",
-    "release:major": "npm run release -- --release-as major",
-    "release:minor": "npm run release -- --release-as minor",
     "test": "npm run eslint && jest --passWithNoTests",
-    "test:cov": "jest --collectCoverage --detectOpenHandles",
-    "version": "conventional-changelog -p angular -i CHANGELOG.md -s"
+    "test:cov": "jest --collectCoverage --detectOpenHandles"
   },
   "main": "./dist/index.js",
   "exports": {
@@ -87,17 +82,17 @@
     "typescript": "^5.x.x"
   },
   "dependencies": {
-    "koatty_container": "^1.x.x",
-    "koatty_core": "2.x.x",
-    "koatty_lib": "^1.x.x",
-    "koatty_logger": "^2.x.x",
-    "koatty_store": "^1.x.x"
+    "koatty_container": "workspace:*",
+    "koatty_core": "workspace:*",
+    "koatty_lib": "workspace:*",
+    "koatty_logger": "workspace:*",
+    "koatty_store": "workspace:*"
   },
   "peerDependencies": {
-    "koatty_container": "^1.x.x",
-    "koatty_core": "2.x.x",
-    "koatty_lib": "^1.x.x",
-    "koatty_logger": "^2.x.x",
-    "koatty_store": "^1.x.x"
+    "koatty_container": "workspace:*",
+    "koatty_core": "workspace:*",
+    "koatty_lib": "workspace:*",
+    "koatty_logger": "workspace:*",
+    "koatty_store": "workspace:*"
   }
 }
