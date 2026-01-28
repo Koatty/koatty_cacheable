@@ -10,7 +10,7 @@
     "build:dts": "npx tsc && npx api-extractor run --local --verbose",
     "eslint": "eslint --ext .ts,.js ./",
     "lock": "npm i --package-lock-only && npm audit fix && npx pnpm i",
-    "prepublishOnly": "npm test && npm run build && git push --follow-tags origin",
+    "prepublishOnly": "npm test && npm run build",
     "prerelease": "npm test && npm run build",
     "test": "npm run eslint && jest --passWithNoTests",
     "test:cov": "jest --collectCoverage --detectOpenHandles"
