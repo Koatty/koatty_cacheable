@@ -1,6 +1,6 @@
 {
   "name": "koatty_cacheable",
-  "version": "2.0.5",
+  "version": "3.0.0",
   "description": "Cacheable for koatty.",
   "scripts": {
     "build": "npm run build:js && npm run build:dts && npm run build:doc && npm run build:cp",
@@ -89,10 +89,10 @@
     "koatty_store": "workspace:*"
   },
   "peerDependencies": {
-    "koatty_container": "^1.17.4",
-    "koatty_core": "^2.0.14",
+    "koatty_container": "^2.0.0",
+    "koatty_core": "^2.1.0",
     "koatty_lib": "^1.4.5",
-    "koatty_logger": "^2.3.4",
-    "koatty_store": "^1.9.4"
+    "koatty_logger": "^2.4.0",
+    "koatty_store": "^2.0.0"
   }
 }
