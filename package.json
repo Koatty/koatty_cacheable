@@ -82,11 +82,11 @@
     "typescript": "^5.x.x"
   },
   "dependencies": {
-    "koatty_container": "^1.17.4",
-    "koatty_core": "^2.0.14",
-    "koatty_lib": "^1.4.5",
-    "koatty_logger": "^2.3.4",
-    "koatty_store": "^1.9.4"
+    "koatty_container": "workspace:*",
+    "koatty_core": "workspace:*",
+    "koatty_lib": "workspace:*",
+    "koatty_logger": "workspace:*",
+    "koatty_store": "workspace:*"
   },
   "peerDependencies": {
     "koatty_container": "^1.17.4",
