@@ -1,6 +1,6 @@
 {
   "name": "koatty_cacheable",
-  "version": "3.0.2",
+  "version": "3.0.4",
   "description": "Cacheable for koatty.",
   "scripts": {
     "build": "npm run build:js && npm run build:dts && npm run build:doc && npm run build:cp",
@@ -10,8 +10,6 @@
     "build:dts": "bash ../../scripts/build-dts.sh",
     "eslint": "eslint --ext .ts,.js ./",
     "lock": "npm i --package-lock-only && npm audit fix && npx pnpm i",
-    "prepublishOnly": "npm test && npm run build",
-    "prerelease": "npm test && npm run build",
     "test": "npm run eslint && jest --passWithNoTests",
     "test:cov": "jest --collectCoverage --detectOpenHandles"
   },
@@ -23,13 +21,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/thinkkoa/koatty_cacheable.git"
+    "url": "git+https://github.com/koatty/koatty_cacheable.git"
   },
   "keywords": [
     "cache",
     "store",
     "koatty",
-    "thinkkoa"
+    "koatty"
   ],
   "engines": {
     "node": ">10.0.0"
@@ -40,9 +38,9 @@
   },
   "license": "BSD-3-Clause",
   "bugs": {
-    "url": "https://github.com/thinkkoa/koatty_cacheable/issues"
+    "url": "https://github.com/koatty/koatty_cacheable/issues"
   },
-  "homepage": "https://github.com/thinkkoa/koatty_cacheable",
+  "homepage": "https://github.com/koatty/koatty_cacheable",
   "maintainers": [
     {
       "name": "richenlin",
@@ -89,10 +87,10 @@
     "koatty_store": "workspace:*"
   },
   "peerDependencies": {
-    "koatty_container": "^2.0.2",
-    "koatty_core": "^2.1.2",
+    "koatty_container": "^2.0.4",
+    "koatty_core": "^2.1.4",
     "koatty_lib": "^1.4.6",
-    "koatty_logger": "^2.4.2",
-    "koatty_store": "^2.0.2"
+    "koatty_logger": "^2.8.2",
+    "koatty_store": "^2.0.3"
   }
 }
