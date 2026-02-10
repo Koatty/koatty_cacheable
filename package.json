@@ -3,21 +3,23 @@
   "version": "3.0.4",
   "description": "Cacheable for koatty.",
   "scripts": {
-    "build": "npm run build:js && npm run build:dts && npm run build:doc && npm run build:cp",
-    "build:cp": "node scripts/postBuild && copyfiles package.json LICENSE README.md dist/",
-    "build:js": "npx rollup --bundleConfigAsCjs -c .rollup.config.js",
-    "build:doc": "npx api-documenter markdown --input temp --output docs/api",
+    "build": "pnpm run build:js && pnpm run build:dts && pnpm run build:doc && pnpm run build:cp",
+    "build:js": "tsup",
     "build:dts": "bash ../../scripts/build-dts.sh",
-    "eslint": "eslint --ext .ts,.js ./",
-    "lock": "npm i --package-lock-only && npm audit fix && npx pnpm i",
-    "test": "npm run eslint && jest --passWithNoTests",
+    "build:doc": "api-documenter markdown --input temp --output docs/api",
+    "build:cp": "node ../../scripts/postBuild.js",
+    "clean": "rimraf dist temp docs/api",
+    "lint": "eslint --ext .ts,.js ./src",
+    "test": "pnpm run lint && jest --passWithNoTests",
     "test:cov": "jest --collectCoverage --detectOpenHandles"
   },
   "main": "./dist/index.js",
   "exports": {
-    "require": "./dist/index.js",
-    "import": "./dist/index.mjs",
-    "types": "./dist/index.d.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
   },
   "repository": {
     "type": "git",
@@ -30,7 +32,7 @@
     "koatty"
   ],
   "engines": {
-    "node": ">10.0.0"
+    "node": ">=18.0.0"
   },
   "author": {
     "name": "richenlin",
@@ -48,36 +50,21 @@
     }
   ],
   "devDependencies": {
-    "@commitlint/cli": "^19.x.x",
-    "@commitlint/config-conventional": "^19.x.x",
-    "@commitlint/format": "^19.x.x",
-    "@microsoft/api-documenter": "^7.x.x",
-    "@microsoft/api-extractor": "^7.x.x",
-    "@rollup/plugin-commonjs": "^28.x.x",
-    "@rollup/plugin-json": "^6.x.x",
-    "@rollup/plugin-node-resolve": "^16.x.x",
-    "@types/jest": "^29.x.x",
+    "@microsoft/api-documenter": "^7.26.x",
+    "@microsoft/api-extractor": "^7.52.x",
+    "@types/jest": "^29.5.x",
     "@types/koa": "^2.x.x",
     "@types/lodash": "^4.x.x",
     "@types/node": "^22.x.x",
     "@typescript-eslint/eslint-plugin": "^8.x.x",
     "@typescript-eslint/parser": "^8.x.x",
-    "conventional-changelog-cli": "^5.x.x",
-    "copyfiles": "^2.x.x",
     "eslint": "^8.x.x",
     "eslint-plugin-jest": "^28.x.x",
-    "husky": "^4.x.x",
     "jest": "^29.x.x",
     "jest-html-reporters": "^3.x.x",
-    "reflect-metadata": "^0.x.x",
-    "rollup": "^4.x.x",
-    "rollup-plugin-delete": "^2.x.x",
-    "rollup-plugin-typescript2": "^0.x.x",
-    "standard-version": "^9.x.x",
+    "reflect-metadata": "^0.2.2",
     "ts-jest": "^29.x.x",
-    "ts-node": "^10.x.x",
-    "tslib": "^2.x.x",
-    "typescript": "^5.x.x"
+    "tslib": "^2.x.x"
   },
   "dependencies": {
     "koatty_container": "workspace:*",
@@ -92,5 +79,6 @@
     "koatty_lib": "^1.4.6",
     "koatty_logger": "^2.8.2",
     "koatty_store": "^2.0.3"
-  }
+  },
+  "types": "./dist/index.d.ts"
 }
