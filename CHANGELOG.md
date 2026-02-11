@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.0.6
+
+### Patch Changes
+
+- Updated dependencies
+  - koatty_container@2.0.6
+  - koatty_core@2.1.6
+
 ## 3.0.5
 
 ### Patch Changes
