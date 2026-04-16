@@ -20,24 +20,34 @@ const longKey = 128;
  */
 export function getArgs(func: (...args: any[]) => any): string[] {
   try {
-    // Match function parameters in parentheses
-    const args = func.toString().match(/.*?\(([^)]*)\)/);
-    if (args && args.length > 1) {
-      // Split parameters into array and clean them
-      return args[1].split(",").map(function (a) {
-        // Remove multi-line comments /* ... */ and single-line comments //
-        const param = a.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "").trim();
-        // Extract parameter name (before : or = or end of string)
-        const match = param.match(/^(\w+)/);
-        return match ? match[1] : "";
-      }).filter(function (ae) {
-        // Filter out empty strings
-        return ae;
-      });
+    const funcStr = func.toString()
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '')
+      .replace(/\s+/g, ' ');
+
+    const argsMatch = funcStr.match(/(?:async\s+)?(?:function\s*)?(?:\w+\s*)?\(([^)]*)\)/)
+      || funcStr.match(/(?:async\s+)?\(([^)]*)\)/)
+      || funcStr.match(/^(?:async\s+)?([^(]+)=>/);
+
+    if (!argsMatch) {
+      return [];
     }
-    return [];
+
+    const argsString = argsMatch[1] || argsMatch[0] || '';
+    if (!argsString.trim()) {
+      return [];
+    }
+
+    return argsString.split(',')
+      .map(function (a) {
+        const trimmed = a.trim();
+        const nameMatch = trimmed.match(/^(\w+)/);
+        return nameMatch ? nameMatch[1] : '';
+      })
+      .filter(function (name) {
+        return name && name !== '_';
+      });
   } catch (error) {
-    // Return empty array if parsing fails
     return [];
   }
 }
@@ -62,10 +72,15 @@ export function getParamIndex(funcParams: string[], params: string[]): number[] 
  */
 export function generateCacheKey(cacheName: string, paramIndexes: number[], paramNames: string[], props: any[]): string {
   let key = cacheName;
-  for (let i = 0; i < paramIndexes.length; i++) {
-    const paramIndex = paramIndexes[i];
-    if (paramIndex >= 0 && props[paramIndex] !== undefined) {
-      key += `:${paramNames[i]}:${Helper.toString(props[paramIndex])}`;
+  const hasUnresolved = paramIndexes.some(idx => idx < 0);
+  if (hasUnresolved) {
+    key += `:${JSON.stringify(props)}`;
+  } else {
+    for (let i = 0; i < paramIndexes.length; i++) {
+      const paramIndex = paramIndexes[i];
+      if (paramIndex >= 0 && props[paramIndex] !== undefined) {
+        key += `:${paramNames[i]}:${Helper.toString(props[paramIndex])}`;
+      }
     }
   }
   return key.length > longKey ? Helper.murmurHash(key) : key;

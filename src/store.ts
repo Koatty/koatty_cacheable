@@ -17,7 +17,7 @@ import { CacheStore, StoreOptions } from "koatty_store";
  * @interface CacheStoreInterface
  */
 interface CacheStoreInterface {
-  store?: CacheStore;
+  store: CacheStore | null;
 }
 
 // storeCache

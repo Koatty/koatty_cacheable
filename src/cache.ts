@@ -57,37 +57,38 @@ export interface CacheEvictOpt {
 export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
   params: [],
   timeout: 300,
-}): MethodDecorator {
-  return (target: any, methodName: string, descriptor: PropertyDescriptor) => {
-    const componentType = IOCContainer.getType(target);
-    if (!["SERVICE", "COMPONENT"].includes(componentType)) {
-      throw Error("This decorator only used in the service、component class.");
-    }
-
-    const { value, configurable, enumerable } = descriptor;
+}) {
+  return IOCContainer.createDecorator(({ target, methodName, descriptor, method, context }) => {
     const mergedOpt = { ...{ params: [], timeout: 300 }, ...opt };
 
-    // Get the parameter list of the method
-    const funcParams = getArgs((<any>target)[methodName]);
-    // Get the defined parameter location
-    const paramIndexes = getParamIndex(funcParams, mergedOpt.params || []);
-    
-    // Validate parameters
-    const invalidParams: string[] = [];
-    (mergedOpt.params || []).forEach((param, index) => {
-      if (paramIndexes[index] === -1) {
-        invalidParams.push(param);
+    if (context) {
+      // TC39 path
+      // Component type check via addInitializer
+      context.addInitializer?.(function (this: any) {
+        const componentType = IOCContainer.getType(this.constructor);
+        if (!["SERVICE", "COMPONENT"].includes(componentType)) {
+          throw Error("This decorator only used in the service、component class.");
+        }
+      });
+
+      // Get the parameter list of the method
+      const originalMethod = method!;
+      const funcParams = getArgs(originalMethod as (...args: any[]) => any);
+      // Get the defined parameter location
+      const paramIndexes = getParamIndex(funcParams, mergedOpt.params || []);
+
+      // Validate parameters
+      const invalidParams: string[] = [];
+      (mergedOpt.params || []).forEach((param, index) => {
+        if (paramIndexes[index] === -1) {
+          invalidParams.push(param);
+        }
+      });
+      if (invalidParams.length > 0) {
+        logger.Warn(`CacheAble: Parameter(s) [${invalidParams.join(", ")}] not found in method ${String(methodName)}. These parameters will be ignored.`);
       }
-    });
-    if (invalidParams.length > 0) {
-      logger.Warn(`CacheAble: Parameter(s) [${invalidParams.join(", ")}] not found in method ${String(methodName)}. These parameters will be ignored.`);
-    }
-    
-    descriptor = {
-      configurable,
-      enumerable,
-      writable: true,
-      async value(...props: any[]) {
+
+      return async function (this: any, ...props: any[]) {
         const store: CacheStore = await GetCacheStore().catch((e: Error): null => {
           logger.error("Get cache store instance failed." + e.message);
           return null;
@@ -109,7 +110,7 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
               });
             }
           }
-          const result = await value.apply(this, props);
+          const result = await originalMethod.apply(this, props);
           // async refresh store
           store.set(key, Helper.isJSONObj(result) ? JSON.stringify(result) : result,
             mergedOpt.timeout).catch((e: Error) => {
@@ -117,17 +118,79 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
             });
           return result;
         } else {
-          // tslint:disable-next-line: no-invalid-this
-          return value.apply(this, props);
+          return originalMethod.apply(this, props);
         }
+      };
+    } else {
+      // Legacy path
+      const componentType = IOCContainer.getType(target);
+      if (!["SERVICE", "COMPONENT"].includes(componentType)) {
+        throw Error("This decorator only used in the service、component class.");
       }
-    };
-    return descriptor;
-  };
+
+      const { value, configurable, enumerable } = descriptor!;
+
+      // Get the parameter list of the method
+      const funcParams = getArgs((<any>target)[methodName]);
+      // Get the defined parameter location
+      const paramIndexes = getParamIndex(funcParams, mergedOpt.params || []);
+
+      // Validate parameters
+      const invalidParams: string[] = [];
+      (mergedOpt.params || []).forEach((param, index) => {
+        if (paramIndexes[index] === -1) {
+          invalidParams.push(param);
+        }
+      });
+      if (invalidParams.length > 0) {
+        logger.Warn(`CacheAble: Parameter(s) [${invalidParams.join(", ")}] not found in method ${String(methodName)}. These parameters will be ignored.`);
+      }
+
+      return {
+        configurable,
+        enumerable,
+        writable: true,
+        async value(this: any, ...props: any[]) {
+          const store: CacheStore = await GetCacheStore().catch((e: Error): null => {
+            logger.error("Get cache store instance failed." + e.message);
+            return null;
+          });
+          if (store) {
+            const key = generateCacheKey(cacheName, paramIndexes, mergedOpt.params, props);
+            const res = await store.get(key).catch((e: Error) => {
+              logger.error("Cache get error:" + e.message);
+            });
+            if (!Helper.isEmpty(res)) {
+              try {
+                return JSON.parse(res as string);
+              } catch (e) {
+                const error = e as Error;
+                logger.error("Cache JSON parse error:" + error.message);
+                // 如果解析失败，删除损坏的缓存，重新执行方法
+                store.del(key).catch((err: Error) => {
+                  logger.error("Cache del error after parse failure:" + err.message);
+                });
+              }
+            }
+            const result = await value.apply(this, props);
+            // async refresh store
+            store.set(key, Helper.isJSONObj(result) ? JSON.stringify(result) : result,
+              mergedOpt.timeout).catch((e: Error) => {
+                logger.error("Cache set error:" + e.message);
+              });
+            return result;
+          } else {
+            // tslint:disable-next-line: no-invalid-this
+            return value.apply(this, props);
+          }
+        }
+      };
+    }
+  }, 'method');
 }
 
 /**
- * Decorating the execution of this method will trigger a cache clear operation. 
+ * Decorating the execution of this method will trigger a cache clear operation.
  * CacheStore server config defined in db.ts.
  *
  * @export
@@ -145,49 +208,52 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
 export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
   delayedDoubleDeletion: true,
 }) {
-  return (target: any, methodName: string, descriptor: PropertyDescriptor) => {
-    const componentType = IOCContainer.getType(target);
-    if (!["SERVICE", "COMPONENT"].includes(componentType)) {
-      throw Error("This decorator only used in the service、component class.");
-    }
-    const { value, configurable, enumerable } = descriptor;
-    opt = { ...{ delayedDoubleDeletion: true, }, ...opt }
-    // Get the parameter list of the method
-    const funcParams = getArgs((<any>target)[methodName]);
-    // Get the defined parameter location
-    const paramIndexes = getParamIndex(funcParams, opt.params || []);
-    
-    // Validate parameters
-    const invalidParams: string[] = [];
-    (opt.params || []).forEach((param, index) => {
-      if (paramIndexes[index] === -1) {
-        invalidParams.push(param);
-      }
-    });
-    if (invalidParams.length > 0) {
-      logger.Warn(`CacheEvict: Parameter(s) [${invalidParams.join(", ")}] not found in method ${String(methodName)}. These parameters will be ignored.`);
-    }
+  return IOCContainer.createDecorator(({ target, methodName, descriptor, method, context }) => {
+    const mergedOpt = { ...{ delayedDoubleDeletion: true, }, ...opt };
 
-    descriptor = {
-      configurable,
-      enumerable,
-      writable: true,
-      async value(...props: any[]) {
+    if (context) {
+      // TC39 path
+      // Component type check via addInitializer
+      context.addInitializer?.(function (this: any) {
+        const componentType = IOCContainer.getType(this.constructor);
+        if (!["SERVICE", "COMPONENT"].includes(componentType)) {
+          throw Error("This decorator only used in the service、component class.");
+        }
+      });
+
+      const originalMethod = method!;
+      // Get the parameter list of the method
+      const funcParams = getArgs(originalMethod as (...args: any[]) => any);
+      // Get the defined parameter location
+      const paramIndexes = getParamIndex(funcParams, mergedOpt.params || []);
+
+      // Validate parameters
+      const invalidParams: string[] = [];
+      (mergedOpt.params || []).forEach((param, index) => {
+        if (paramIndexes[index] === -1) {
+          invalidParams.push(param);
+        }
+      });
+      if (invalidParams.length > 0) {
+        logger.Warn(`CacheEvict: Parameter(s) [${invalidParams.join(", ")}] not found in method ${String(methodName)}. These parameters will be ignored.`);
+      }
+
+      return async function (this: any, ...props: any[]) {
         const store: CacheStore = await GetCacheStore().catch((e: Error): null => {
           logger.error("Get cache store instance failed." + e.message);
           return null;
         });
 
         if (store) {
-          const key = generateCacheKey(cacheName, paramIndexes, opt.params || [], props);
+          const key = generateCacheKey(cacheName, paramIndexes, mergedOpt.params || [], props);
 
-          const result = await value.apply(this, props);
+          const result = await originalMethod.apply(this, props);
           store.del(key).catch((e: Error) => {
             logger.error("Cache delete error:" + e.message);
           });
 
-          if (opt.delayedDoubleDeletion) {
-            const delayTime = opt.delayTime || 5000;
+          if (mergedOpt.delayedDoubleDeletion) {
+            const delayTime = mergedOpt.delayTime || 5000;
             asyncDelayedExecution(() => {
               store.del(key).catch((e: Error) => {
                 logger.error("Cache double delete error:" + e.message);
@@ -197,10 +263,65 @@ export function CacheEvict(cacheName: string, opt: CacheEvictOpt = {
           return result;
         } else {
           // If store is not available, execute method directly
-          return value.apply(this, props);
+          return originalMethod.apply(this, props);
         }
+      };
+    } else {
+      // Legacy path
+      const componentType = IOCContainer.getType(target);
+      if (!["SERVICE", "COMPONENT"].includes(componentType)) {
+        throw Error("This decorator only used in the service、component class.");
       }
-    };
-    return descriptor;
-  }
+      const { value, configurable, enumerable } = descriptor!;
+      // Get the parameter list of the method
+      const funcParams = getArgs((<any>target)[methodName]);
+      // Get the defined parameter location
+      const paramIndexes = getParamIndex(funcParams, mergedOpt.params || []);
+
+      // Validate parameters
+      const invalidParams: string[] = [];
+      (mergedOpt.params || []).forEach((param, index) => {
+        if (paramIndexes[index] === -1) {
+          invalidParams.push(param);
+        }
+      });
+      if (invalidParams.length > 0) {
+        logger.Warn(`CacheEvict: Parameter(s) [${invalidParams.join(", ")}] not found in method ${String(methodName)}. These parameters will be ignored.`);
+      }
+
+      return {
+        configurable,
+        enumerable,
+        writable: true,
+        async value(this: any, ...props: any[]) {
+          const store: CacheStore = await GetCacheStore().catch((e: Error): null => {
+            logger.error("Get cache store instance failed." + e.message);
+            return null;
+          });
+
+          if (store) {
+            const key = generateCacheKey(cacheName, paramIndexes, mergedOpt.params || [], props);
+
+            const result = await value.apply(this, props);
+            store.del(key).catch((e: Error) => {
+              logger.error("Cache delete error:" + e.message);
+            });
+
+            if (mergedOpt.delayedDoubleDeletion) {
+              const delayTime = mergedOpt.delayTime || 5000;
+              asyncDelayedExecution(() => {
+                store.del(key).catch((e: Error) => {
+                  logger.error("Cache double delete error:" + e.message);
+                });
+              }, delayTime);
+            }
+            return result;
+          } else {
+            // If store is not available, execute method directly
+            return value.apply(this, props);
+          }
+        }
+      };
+    }
+  }, 'method');
 }
