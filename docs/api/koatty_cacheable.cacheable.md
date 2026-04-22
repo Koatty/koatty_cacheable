@@ -10,7 +10,7 @@ Decorate this method to support caching. The cache method returns a value to ens
 **Signature:**
 
 ```typescript
-export declare function CacheAble(cacheName: string, opt?: CacheAbleOpt): MethodDecorator;
+export declare function CacheAble(cacheName: string, opt?: CacheAbleOpt): (...args: any[]) => any;
 ```
 
 ## Parameters
@@ -67,7 +67,7 @@ _(Optional)_ cache options e.g: { params: \["id"\], timeout: 30 } Use the 'id' p
 
 **Returns:**
 
-MethodDecorator
+(...args: any\[\]) =&gt; any
 
 {<!-- -->MethodDecorator<!-- -->}
 

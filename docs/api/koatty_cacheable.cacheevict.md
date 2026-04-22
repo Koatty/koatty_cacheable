@@ -10,7 +10,7 @@ Decorating the execution of this method will trigger a cache clear operation. Ca
 **Signature:**
 
 ```typescript
-export declare function CacheEvict(cacheName: string, opt?: CacheEvictOpt): (target: any, methodName: string, descriptor: PropertyDescriptor) => PropertyDescriptor;
+export declare function CacheEvict(cacheName: string, opt?: CacheEvictOpt): (...args: any[]) => any;
 ```
 
 ## Parameters
@@ -67,6 +67,6 @@ _(Optional)_ cache options e.g: { params: \["id"\], delayedDoubleDeletion: true 
 
 **Returns:**
 
-(target: any, methodName: string, descriptor: PropertyDescriptor) =&gt; PropertyDescriptor
+(...args: any\[\]) =&gt; any
 
 
