@@ -1,5 +1,49 @@
 # Changelog
 
+## 3.1.0
+
+### Minor Changes
+
+- build
+- build
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+  - koatty_core@2.2.0
+  - koatty_container@3.0.0
+  - koatty_lib@1.5.0
+  - koatty_logger@3.0.0
+  - koatty_store@3.0.0
+
+## 3.0.7
+
+### Patch Changes
+
+- build
+- Phase 2: Quality and stability improvements
+  - **koatty-core**: Fix component enable logic - change OR to AND in ComponentManager (TASK-2-1)
+  - **koatty-core**: Fix createContext return type from any to KoattyContext (TASK-2-7)
+  - **koatty-core**: Remove dead code and unused exports (TASK-2-6)
+  - **koatty-serve**: Remove dead code from ServeComponent (TASK-2-6)
+  - **koatty-serve**: Add multi-protocol port conflict warnings (TASK-2-10)
+  - **koatty-trace**: Fix span lifecycle - add span.end() on request completion (TASK-2-4)
+  - **koatty-router**: Fix validation null safety with optional chaining (TASK-2-2)
+  - **koatty-cacheable**: Fix storeCache.store type inconsistency (TASK-2-3)
+  - **koatty-cacheable**: Make memory cache transactions throw explicit errors (TASK-2-9)
+  - **All packages**: Fix retry condition to only retry transient errors (TASK-2-5)
+  - **Build system**: Complete tsconfig.json references (6 -> 19 packages) (TASK-2-8)
+
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - koatty_container@2.0.9
+  - koatty_core@2.1.10
+  - koatty_lib@1.4.9
+  - koatty_logger@2.8.5
+  - koatty_store@2.0.6
+
 ## 3.0.6
 
 ### Patch Changes
