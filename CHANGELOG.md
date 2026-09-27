@@ -1,5 +1,16 @@
 # Changelog
 
+## 4.0.0
+
+### Patch Changes
+
+- Updated dependencies
+  - koatty_core@2.3.0
+  - koatty_container@3.0.0
+  - koatty_lib@1.6.0
+  - koatty_store@3.0.0
+  - koatty_logger@3.0.0
+
 ## 3.1.0
 
 ### Minor Changes
@@ -23,6 +34,7 @@
 
 - build
 - Phase 2: Quality and stability improvements
+
   - **koatty-core**: Fix component enable logic - change OR to AND in ComponentManager (TASK-2-1)
   - **koatty-core**: Fix createContext return type from any to KoattyContext (TASK-2-7)
   - **koatty-core**: Remove dead code and unused exports (TASK-2-6)
