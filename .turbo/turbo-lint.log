@@ -1,4 +1,0 @@
-
-> koatty_cacheable@3.0.6 lint /Volumes/ExternalSSD/Users/richen/Workspace/nodejs/koatty-monorepo/packages/koatty-cacheable
-> eslint --ext .ts,.js ./src
-
