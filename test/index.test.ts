@@ -61,7 +61,7 @@ describe("Cache", () => {
     // 验证损坏的缓存已被删除或重新设置为有效值
     const cachedValue = await cs.get("run:name:invalid");
     // 由于缓存了方法返回值，缓存应该是字符串 "123" 或被删除后重新设置
-    assert.ok(cachedValue === "123" || cachedValue === null);
+    assert.deepEqual(JSON.parse(cachedValue!), { __koattyCache: 1, value: "123" });
   });
 
   test("Cache store unavailable", async () => {
@@ -140,7 +140,7 @@ describe("Cache Delayed Deletion", () => {
     // 验证缓存被正确设置
     const cs = await GetCacheStore();
     const cachedValue = await cs.get("concurrent:id:test2");
-    assert.ok(cachedValue === expectedResult || cachedValue === `"${expectedResult}"`);
+    assert.deepEqual(JSON.parse(cachedValue!), { __koattyCache: 1, value: expectedResult });
   });
 
   test("Concurrent cache initialization", async () => {
@@ -210,6 +210,6 @@ describe("Cache Delayed Deletion", () => {
     
     // 验证无参数缓存键格式
     const noParamsValue = await cs.get("noparams");
-    assert.ok(noParamsValue === "no-params" || noParamsValue === '"no-params"');
+    assert.deepEqual(JSON.parse(noParamsValue!), { __koattyCache: 1, value: "no-params" });
   });
 })

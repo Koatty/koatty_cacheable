@@ -6,11 +6,39 @@
  * @Copyright (c) - <richenlin(at)gmail.com>
  */
 import { IOCContainer } from 'koatty_container';
-import { Helper } from "koatty_lib";
 import { DefaultLogger as logger } from "koatty_logger";
 import { CacheStore } from "koatty_store";
 import { asyncDelayedExecution, generateCacheKey, getArgs, getParamIndex } from './utils';
 import { GetCacheStore } from './store';
+
+// Single flight is scoped to the store and final key, shared by both decorator modes.
+const flights = new WeakMap<object, Map<string, Promise<any>>>();
+async function cached(store: CacheStore, key: string, timeout: number, load: () => Promise<any>) {
+  let active = flights.get(store);
+  if (!active) { active = new Map(); flights.set(store, active); }
+  if (active.has(key)) return active.get(key);
+  const pending = (async () => {
+    const raw = await store.get(key).catch((): undefined => undefined);
+    if (typeof raw === 'string') {
+      try {
+        const envelope = JSON.parse(raw);
+        if (envelope?.__koattyCache === 1 && Object.prototype.hasOwnProperty.call(envelope, 'value')) return envelope.value;
+      } catch { /* Old/untyped entries are misses: their original type cannot be recovered. */ }
+    }
+    const value = await load();
+    // Cache JSON-compatible values only. Unsupported objects retain their live return type.
+    const supported = (v: any): boolean => v === null || typeof v === 'string' || typeof v === 'boolean'
+      || (typeof v === 'number' && Number.isFinite(v))
+      || (Array.isArray(v) && v.every(supported))
+      || (v && Object.getPrototypeOf(v) === Object.prototype && Object.values(v).every(supported));
+    try {
+      if (supported(value)) await store.set(key, JSON.stringify({ __koattyCache: 1, value }), timeout);
+    } catch (error) { logger.error('Cache set error:' + (error as Error).message); }
+    return value;
+  })();
+  active.set(key, pending);
+  try { return await pending; } finally { active.delete(key); }
+}
 
 /**
  * @description: 
@@ -95,28 +123,7 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
         });
         if (store) {
           const key = generateCacheKey(cacheName, paramIndexes, mergedOpt.params, props);
-          const res = await store.get(key).catch((e: Error) => {
-            logger.error("Cache get error:" + e.message);
-          });
-          if (!Helper.isEmpty(res)) {
-            try {
-              return JSON.parse(res as string);
-            } catch (e) {
-              const error = e as Error;
-              logger.error("Cache JSON parse error:" + error.message);
-              // 如果解析失败，删除损坏的缓存，重新执行方法
-              store.del(key).catch((err: Error) => {
-                logger.error("Cache del error after parse failure:" + err.message);
-              });
-            }
-          }
-          const result = await originalMethod.apply(this, props);
-          // async refresh store
-          store.set(key, Helper.isJSONObj(result) ? JSON.stringify(result) : result,
-            mergedOpt.timeout).catch((e: Error) => {
-              logger.error("Cache set error:" + e.message);
-            });
-          return result;
+          return cached(store, key, mergedOpt.timeout, () => originalMethod.apply(this, props));
         } else {
           return originalMethod.apply(this, props);
         }
@@ -157,28 +164,7 @@ export function CacheAble(cacheName: string, opt: CacheAbleOpt = {
           });
           if (store) {
             const key = generateCacheKey(cacheName, paramIndexes, mergedOpt.params, props);
-            const res = await store.get(key).catch((e: Error) => {
-              logger.error("Cache get error:" + e.message);
-            });
-            if (!Helper.isEmpty(res)) {
-              try {
-                return JSON.parse(res as string);
-              } catch (e) {
-                const error = e as Error;
-                logger.error("Cache JSON parse error:" + error.message);
-                // 如果解析失败，删除损坏的缓存，重新执行方法
-                store.del(key).catch((err: Error) => {
-                  logger.error("Cache del error after parse failure:" + err.message);
-                });
-              }
-            }
-            const result = await value.apply(this, props);
-            // async refresh store
-            store.set(key, Helper.isJSONObj(result) ? JSON.stringify(result) : result,
-              mergedOpt.timeout).catch((e: Error) => {
-                logger.error("Cache set error:" + e.message);
-              });
-            return result;
+            return cached(store, key, mergedOpt.timeout, () => value.apply(this, props));
           } else {
             // tslint:disable-next-line: no-invalid-this
             return value.apply(this, props);

@@ -11,6 +11,8 @@
 
 import { Helper } from "koatty_lib";
 
+import { createHash } from 'crypto';
+
 const longKey = 128;
 
 /**
@@ -83,7 +85,7 @@ export function generateCacheKey(cacheName: string, paramIndexes: number[], para
       }
     }
   }
-  return key.length > longKey ? Helper.murmurHash(key) : key;
+  return key.length > longKey ? `${cacheName.slice(0, 80)}:sha1:${createHash('sha1').update(key).digest('hex')}` : key;
 }
 
 /**
