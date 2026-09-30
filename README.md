@@ -7,6 +7,8 @@ Koatty框架的 CacheAble, CacheEvict 缓存装饰器支持库，提供方法级
 ## 特性
 
 - 🚀 **简单易用**: 通过装饰器轻松添加缓存功能
+- 🛡️ **Redis 事务隔离(6.0)**: Redis 事务返回显式隔离句柄，原生连接必须显式释放；无类型的历史缓存条目按未命中处理，缓存类型由 single-flight 保护
+- 🧬 **5.x 家族兼容**: peer 对齐 koatty_container@^4.1 / koatty_core@^2.7 / koatty_store@^4.1
 - 🔄 **自动缓存**: `@CacheAble` 装饰器自动缓存方法返回值
 - 🗑️ **智能清除**: `@CacheEvict` 装饰器智能清除相关缓存
 - ⚡ **延迟双删**: 支持延迟双删策略，解决缓存一致性问题
