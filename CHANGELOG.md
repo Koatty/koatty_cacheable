@@ -1,5 +1,23 @@
 # Changelog
 
+## 6.0.0
+
+### Patch Changes
+
+- f0e9278: Close Phase C audit findings: await singleton initialization and reverse disposal, make shutdown idempotent and drain responses complete, handle real gRPC deadlines and stream termination, bound lock renewal with cooperative cancellation, await scheduler drain, validate JSON Schema and explicit security profiles, isolate Redis native leases/transactions, and preserve cached types with single flight.
+
+  Redis transactions now return an explicit isolated handle; native connections must be released. Untyped legacy cache entries are treated as misses. JSON Schema requires optional peer ajv 8. See docs/migration/phase-c-audit-remediation.md before release. Linux/Redis CI and independent package consumption remain release gates.
+
+- Updated dependencies [f0e9278]
+- Updated dependencies [f0e9278]
+- Updated dependencies [f0e9278]
+- Updated dependencies [f0e9278]
+  - koatty_core@2.7.0
+  - koatty_container@4.1.0
+  - koatty_store@4.1.0
+  - koatty_lib@1.6.1
+  - koatty_logger@3.1.2
+
 ## 5.0.0
 
 ### Patch Changes
@@ -44,6 +62,7 @@
 
 - build
 - Phase 2: Quality and stability improvements
+
   - **koatty-core**: Fix component enable logic - change OR to AND in ComponentManager (TASK-2-1)
   - **koatty-core**: Fix createContext return type from any to KoattyContext (TASK-2-7)
   - **koatty-core**: Remove dead code and unused exports (TASK-2-6)
